@@ -48,7 +48,7 @@ export default async function LessonPlayerPage({ params }: { params: Promise<{ g
           
           {/* Trình phát Video (Thay ID YouTube của Thầy vào đây) */}
           <div className="mb-6">
-            <YouTubePlayer youtubeId="dQw4w9WgXcQ" title="Bài 1: Khái quát chung" />
+            <YouTubePlayer youtubeId="bUQIIhqktfQ" title="Bài 1: Tính đơn điệu và cực trị của hàm số" />
           </div>
 
           {/* Thông tin bài học & Tabs */}
@@ -78,10 +78,16 @@ export default async function LessonPlayerPage({ params }: { params: Promise<{ g
               <p className="text-gray-600 mb-4 leading-relaxed">
                 Tài liệu bài giảng hôm nay gồm tóm tắt lý thuyết trọng tâm và 50 bài tập trắc nghiệm chọn lọc. Các em học viên nhấn tải file PDF bên dưới, in ra để luyện tập song song cùng video nhé.
               </p>
-              <button className="bg-blue-50 text-blue-700 px-5 py-3 rounded-xl text-sm font-bold border border-blue-200 flex items-center space-x-2 hover:bg-blue-100 hover:shadow-md transition-all">
-                <span className="text-lg">⬇️</span>
-                <span>Tải xuống: BTTL_Bai1_ThayHuy.pdf</span>
-              </button>
+              {/* NÚT TÀI LIỆU GOOGLE DRIVE */}
+<a 
+  href="https://drive.google.com/file/d/1ymPBT_TEPcMqreWy-U5XVC_sY9AVSUki/view?usp=drive_link" 
+  target="_blank"
+  rel="noopener noreferrer"
+  className="bg-blue-50 text-blue-700 px-5 py-3 rounded-xl text-sm font-bold border border-blue-200 inline-flex items-center space-x-2 hover:bg-blue-100 hover:shadow-md transition-all w-fit cursor-pointer"
+>
+  <span className="text-lg">⬇️</span>
+  <span>Xem & Tải: [TOAN12-TN]_Bai1_Tinh_don_dieu_va_cuc_tri_PHT.pdf</span>
+</a>
             </div>
           </div>
         </div>
