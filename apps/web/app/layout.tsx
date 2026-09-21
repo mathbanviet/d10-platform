@@ -41,7 +41,7 @@ export default function RootLayout({
               <Link href="/" className="hover:text-yellow-300 transition-colors">Trang chủ</Link>
               <Link href="/courses" className="hover:text-yellow-300 transition-colors">Khóa học</Link>
               <Link href="/teachers" className="hover:text-yellow-300 transition-colors">Giáo viên</Link>
-              <Link href="/documents" className="hover:text-yellow-300 transition-colors">Tài liệu</Link>
+              <a href="https://d10hub.io.vn" target="_blank" rel="noopener noreferrer" className="hover:text-yellow-300 transition-colors">Tài liệu</a>
             </nav>
             
             {/* Nút Đăng nhập */}
