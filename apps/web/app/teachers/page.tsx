@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
-// Định nghĩa cấu trúc dữ liệu chuẩn cho TypeScript
+// Định nghĩa cấu trúc chuẩn, Vercel sẽ không thể báo lỗi
 interface Teacher {
   slug: string;
   name: string;
@@ -40,11 +40,7 @@ export default function TeachersPage() {
           if (!lines[i].trim()) continue;
           const cols = lines[i].split('\t');
           
-          // XỬ LÝ AN TOÀN CHO TYPE SCRIPT (Khắc phục lỗi TS2532)
-          const rawSubjects = cols[7] || '';
-          const rawFilterSub = cols[8] || '';
-          const rawFilterGrade = cols[9] || '';
-
+          // Lớp bảo vệ an toàn 100%: Dùng (cols[x] || '') để tránh lỗi undefined
           data.push({
             slug: cols[0]?.trim() || '',
             name: cols[1]?.trim() || '',
@@ -55,9 +51,9 @@ export default function TeachersPage() {
               courses: cols[5]?.trim() || '0', 
               students: cols[6]?.trim() || '0' 
             },
-            subjects: rawSubjects ? rawSubjects.split(',').map(s => s.trim()) : [],
-            filterSubject: rawFilterSub ? rawFilterSub.split(',').map(s => s.trim()) : [],
-            filterGrade: rawFilterGrade ? rawFilterGrade.split(',').map(s => s.trim()) : []
+            subjects: (cols[7] || '').split(',').map(s => s.trim()).filter(Boolean),
+            filterSubject: (cols[8] || '').split(',').map(s => s.trim()).filter(Boolean),
+            filterGrade: (cols[9] || '').split(',').map(s => s.trim()).filter(Boolean)
           });
         }
         setTeachers(data);
