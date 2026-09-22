@@ -12,6 +12,8 @@ interface Teacher {
   slogan: string;
   stats: { courses: string; students: string };
   subjects: string[];
+  email: string;
+  facebook: string;
 }
 
 export default function TeacherDetailPage() {
@@ -38,6 +40,10 @@ export default function TeacherDetailPage() {
           const currentSlug = cols[0] ? cols[0].trim() : '';
 
           if (currentSlug === slug) {
+            // Đọc dữ liệu từ cột K (index 10) và L (index 11)
+            const rawEmail = cols[10] ? cols[10].trim() : '';
+            const rawFacebook = cols[11] ? cols[11].trim() : '';
+
             foundTeacher = {
               slug: currentSlug,
               name: cols[1] ? cols[1].trim() : 'Giáo viên',
@@ -48,7 +54,10 @@ export default function TeacherDetailPage() {
                 courses: cols[5] ? cols[5].trim() : '0',
                 students: cols[6] ? cols[6].trim() : '0'
               },
-              subjects: cols[7] ? cols[7].split(',').map(s => s.trim()) : []
+              subjects: cols[7] ? cols[7].split(',').map(s => s.trim()) : [],
+              // LOGIC THÔNG MINH: Có thì lấy, trống thì tự sinh
+              email: rawEmail !== '' ? rawEmail : `gv.${currentSlug}@diem10.edu.vn`,
+              facebook: rawFacebook !== '' ? rawFacebook : `https://www.facebook.com/${currentSlug}`
             };
             break;
           }
@@ -93,7 +102,7 @@ export default function TeacherDetailPage() {
         </div>
       </div>
 
-      {/* SECTION 1: NHỮNG CÂU CHUYỆN THÚ VỊ (Giống ảnh 2) */}
+      {/* SECTION 1: NHỮNG CÂU CHUYỆN THÚ VỊ */}
       <div className="max-w-5xl mx-auto px-4 mt-16">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-gray-700 uppercase tracking-wider">Những câu chuyện thú vị</h2>
@@ -105,7 +114,6 @@ export default function TeacherDetailPage() {
         </div>
 
         <div className="flex flex-col md:flex-row relative items-center justify-center mt-12">
-          {/* Ảnh bên trái */}
           <div className="w-full md:w-5/12 z-10 relative">
             <img 
               src={teacher.image} 
@@ -113,7 +121,6 @@ export default function TeacherDetailPage() {
               className="w-full object-cover shadow-2xl border-4 border-white aspect-square md:aspect-auto md:h-[450px]"
             />
           </div>
-          {/* Box Vàng bên phải */}
           <div className="w-full md:w-7/12 bg-[#fffbc7] p-8 md:p-12 md:pl-24 md:-ml-12 shadow-lg z-0 mt-4 md:mt-0">
             <h3 className="text-[#0070c0] font-bold text-2xl mb-6 uppercase">Đôi nét về {teacher.name.replace('Cô ', '').replace('Thầy ', '')}</h3>
             <p className="text-gray-800 mb-4 leading-relaxed text-justify">
@@ -126,16 +133,14 @@ export default function TeacherDetailPage() {
         </div>
       </div>
 
-      {/* SECTION 2: THÔNG TIN GIÁO VIÊN (Giống ảnh 1) */}
+      {/* SECTION 2: THÔNG TIN GIÁO VIÊN */}
       <div className="max-w-3xl mx-auto px-4 mt-24">
         <div className="bg-white shadow-xl border border-gray-100 relative pt-14 pb-8 px-8 md:px-16 mt-8">
-          {/* Box Header Xanh nổi lên trên */}
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#0070c0] text-white px-8 md:px-16 py-4 text-xl md:text-2xl font-bold uppercase shadow-md whitespace-nowrap">
             Thông tin giáo viên
           </div>
 
           <div className="space-y-6">
-            {/* Hàng 1: Họ tên */}
             <div className="flex items-start border-b pb-4">
               <svg className="w-8 h-8 text-[#0070c0] mr-6 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
               <div>
@@ -144,7 +149,6 @@ export default function TeacherDetailPage() {
               </div>
             </div>
 
-            {/* Hàng 2: Nơi công tác */}
             <div className="flex items-start border-b pb-4">
               <svg className="w-8 h-8 text-[#0070c0] mr-6 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               <div>
@@ -153,7 +157,6 @@ export default function TeacherDetailPage() {
               </div>
             </div>
 
-            {/* Hàng 3: Chia đôi (Môn dạy & Học vị) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-4">
               <div className="flex items-start">
                 <svg className="w-8 h-8 text-[#0070c0] mr-6 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
@@ -171,20 +174,20 @@ export default function TeacherDetailPage() {
               </div>
             </div>
 
-            {/* Hàng 4: Liên hệ */}
+            {/* Hiển thị Email và Facebook động từ Google Sheets */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="flex items-start">
                 <svg className="w-8 h-8 text-[#0070c0] mr-6 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
                 <div className="overflow-hidden">
                   <p className="text-gray-900 font-bold mb-1">Email:</p>
-                  <p className="text-blue-600 truncate">gv.{teacher.slug}@diem10.edu.vn</p>
+                  <a href={`mailto:${teacher.email}`} className="text-blue-600 truncate hover:underline block">{teacher.email}</a>
                 </div>
               </div>
               <div className="flex items-start">
                 <svg className="w-8 h-8 text-[#0070c0] mr-6 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 <div className="overflow-hidden">
                   <p className="text-gray-900 font-bold mb-1">Facebook:</p>
-                  <p className="text-blue-600 truncate">facebook.com/{teacher.slug}</p>
+                  <a href={teacher.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 truncate hover:underline block">{teacher.facebook}</a>
                 </div>
               </div>
             </div>
@@ -192,7 +195,7 @@ export default function TeacherDetailPage() {
         </div>
       </div>
 
-      {/* SECTION 3: KHÓA HỌC CỦA TÔI (Giống ảnh 3) */}
+      {/* SECTION 3: KHÓA HỌC CỦA TÔI */}
       <div className="max-w-6xl mx-auto px-4 mt-20">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-gray-700 uppercase tracking-wider">Khóa học của tôi</h2>
@@ -204,11 +207,9 @@ export default function TeacherDetailPage() {
         </div>
 
         <div className="bg-[#0070c0] text-white p-6 md:p-10 flex flex-col md:flex-row gap-8 items-center shadow-xl">
-          {/* Card Khóa học giả lập */}
           <div className="bg-white text-gray-800 w-full md:w-1/3 shadow-lg flex-shrink-0">
             <div className="bg-[#00b0f0] h-32 relative overflow-hidden flex items-center justify-center">
               <h4 className="text-white font-black text-4xl shadow-sm z-10 uppercase">{teacher.subjects[0] || 'MÔN HỌC'}</h4>
-              {/* Trang trí */}
               <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white opacity-20 rounded-full"></div>
               <div className="absolute top-2 right-2 bg-white text-[#0070c0] text-xs font-bold px-2 py-1 rounded">Điểm 10+ Class</div>
             </div>
@@ -223,7 +224,6 @@ export default function TeacherDetailPage() {
             </div>
           </div>
 
-          {/* Chi tiết khóa học */}
           <div className="w-full md:w-2/3">
             <h3 className="text-3xl font-bold mb-4">{teacher.subjects[0] || 'Khóa học'} - Nắm chắc nền tảng, bứt phá điểm số</h3>
             <p className="mb-4 text-blue-100">
