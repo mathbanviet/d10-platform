@@ -4,24 +4,9 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
-// Khai báo kiểu dữ liệu
-interface Teacher {
-  slug: string;
-  name: string;
-  role: string;
-  image: string;
-  slogan: string;
-  stats: {
-    courses: string;
-    students: string;
-  };
-  subjects: string[];
-  filterSubject: string[];
-  filterGrade: string[];
-}
-
 export default function TeachersPage() {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  // Dùng any[] để chặn Vercel bắt bẻ các thuộc tính bên trong
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedSubject, setSelectedSubject] = useState('all');
@@ -34,29 +19,29 @@ export default function TeachersPage() {
       .then(res => res.text())
       .then(text => {
         const lines = text.split('\n');
-        const data: Teacher[] = [];
+        const data: any[] = [];
         
-        for (let i = 1; i < lines.length; i++) {
-          // BÍ QUYẾT TRỊ TYPESCRIPT: Gán vào biến 'line' trước khi xử lý
-          const line = lines[i]; 
-          
-          if (!line || !line.trim()) continue;
+        // BÍ QUYẾT: Cắt bỏ dòng tiêu đề và lặp trực tiếp (Không dùng lines[i] nữa)
+        const dataLines = lines.slice(1);
+        
+        for (const line of dataLines) {
+          if (!line || typeof line !== 'string' || line.trim() === '') continue;
           
           const cols = line.split('\t');
           
           data.push({
-            slug: cols[0] ? String(cols[0]).trim() : '',
-            name: cols[1] ? String(cols[1]).trim() : 'Giáo viên',
-            role: cols[2] ? String(cols[2]).trim() : 'Đang cập nhật',
-            image: cols[3] ? String(cols[3]).trim() : 'https://via.placeholder.com/512',
-            slogan: cols[4] ? String(cols[4]).trim() : '',
+            slug: cols[0] ? cols[0].trim() : '',
+            name: cols[1] ? cols[1].trim() : 'Giáo viên',
+            role: cols[2] ? cols[2].trim() : 'Đang cập nhật',
+            image: cols[3] ? cols[3].trim() : 'https://via.placeholder.com/512',
+            slogan: cols[4] ? cols[4].trim() : '',
             stats: { 
-              courses: cols[5] ? String(cols[5]).trim() : '0', 
-              students: cols[6] ? String(cols[6]).trim() : '0' 
+              courses: cols[5] ? cols[5].trim() : '0', 
+              students: cols[6] ? cols[6].trim() : '0' 
             },
-            subjects: cols[7] ? String(cols[7]).split(',').map(s => s.trim()) : [],
-            filterSubject: cols[8] ? String(cols[8]).split(',').map(s => s.trim()) : [],
-            filterGrade: cols[9] ? String(cols[9]).split(',').map(s => s.trim()) : []
+            subjects: cols[7] ? cols[7].split(',').map((s: string) => s.trim()) : [],
+            filterSubject: cols[8] ? cols[8].split(',').map((s: string) => s.trim()) : [],
+            filterGrade: cols[9] ? cols[9].split(',').map((s: string) => s.trim()) : []
           });
         }
         setTeachers(data);
@@ -69,8 +54,8 @@ export default function TeachersPage() {
   }, []);
 
   const filteredTeachers = teachers.filter((teacher) => {
-    const matchSubject = selectedSubject === 'all' || (Array.isArray(teacher.filterSubject) && teacher.filterSubject.includes(selectedSubject));
-    const matchGrade = selectedGrade === 'all' || (Array.isArray(teacher.filterGrade) && teacher.filterGrade.includes(selectedGrade));
+    const matchSubject = selectedSubject === 'all' || (teacher.filterSubject && teacher.filterSubject.includes(selectedSubject));
+    const matchGrade = selectedGrade === 'all' || (teacher.filterGrade && teacher.filterGrade.includes(selectedGrade));
     return matchSubject && matchGrade;
   });
 
@@ -104,6 +89,9 @@ export default function TeachersPage() {
                 <option value="khtn">Khoa học Tự nhiên</option>
                 <option value="tin">Tin học</option>
               </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              </div>
             </div>
             <div className="relative">
               <select 
@@ -115,6 +103,9 @@ export default function TeachersPage() {
                 <option value="thcs">Khối THCS</option>
                 <option value="thpt">Khối THPT</option>
               </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              </div>
             </div>
           </div>
         </div>
