@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
-// Định nghĩa cấu trúc dữ liệu chuẩn để Vercel không báo lỗi TypeScript
+// Định nghĩa cấu trúc dữ liệu chuẩn cho TypeScript
 interface Teacher {
   slug: string;
   name: string;
@@ -21,37 +21,43 @@ interface Teacher {
 }
 
 export default function TeachersPage() {
-  // Đã thay <any[]> thành <Teacher[]>
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedGrade, setSelectedGrade] = useState('all');
 
-  // HÚT DỮ LIỆU TỪ GOOGLE SHEETS
   useEffect(() => {
-    // Link TSV của Thầy:
     const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSjdYHhNTm00PIA9BEBwTUu9ZinkRQ-VfdaPm3qDvXpqGYkhPMX_4dz3vkvXB38a4sDL_Ezm_zZ2tcp/pub?output=tsv';
     
     fetch(sheetUrl)
       .then(res => res.text())
       .then(text => {
         const lines = text.split('\n');
-        const data: Teacher[] = []; // Khai báo kiểu dữ liệu rõ ràng
+        const data: Teacher[] = [];
         
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
           const cols = lines[i].split('\t');
+          
+          // XỬ LÝ AN TOÀN CHO TYPE SCRIPT (Khắc phục lỗi TS2532)
+          const rawSubjects = cols[7] || '';
+          const rawFilterSub = cols[8] || '';
+          const rawFilterGrade = cols[9] || '';
+
           data.push({
             slug: cols[0]?.trim() || '',
             name: cols[1]?.trim() || '',
             role: cols[2]?.trim() || '',
             image: cols[3]?.trim() || '',
             slogan: cols[4]?.trim() || '',
-            stats: { courses: cols[5]?.trim() || '0', students: cols[6]?.trim() || '0' },
-            subjects: cols[7] ? cols[7].split(',').map(s => s.trim()) : [],
-            filterSubject: cols[8] ? cols[8].split(',').map(s => s.trim()) : [],
-            filterGrade: cols[9] ? cols[9].split(',').map(s => s.trim()) : []
+            stats: { 
+              courses: cols[5]?.trim() || '0', 
+              students: cols[6]?.trim() || '0' 
+            },
+            subjects: rawSubjects ? rawSubjects.split(',').map(s => s.trim()) : [],
+            filterSubject: rawFilterSub ? rawFilterSub.split(',').map(s => s.trim()) : [],
+            filterGrade: rawFilterGrade ? rawFilterGrade.split(',').map(s => s.trim()) : []
           });
         }
         setTeachers(data);
