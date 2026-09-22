@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
-// Định nghĩa cấu trúc chuẩn, Vercel sẽ không thể báo lỗi
+// Khai báo kiểu dữ liệu
 interface Teacher {
   slug: string;
   name: string;
@@ -37,37 +37,40 @@ export default function TeachersPage() {
         const data: Teacher[] = [];
         
         for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-          const cols = lines[i].split('\t');
+          // BÍ QUYẾT TRỊ TYPESCRIPT: Gán vào biến 'line' trước khi xử lý
+          const line = lines[i]; 
           
-          // Lớp bảo vệ an toàn 100%: Dùng (cols[x] || '') để tránh lỗi undefined
+          if (!line || !line.trim()) continue;
+          
+          const cols = line.split('\t');
+          
           data.push({
-            slug: cols[0]?.trim() || '',
-            name: cols[1]?.trim() || '',
-            role: cols[2]?.trim() || '',
-            image: cols[3]?.trim() || '',
-            slogan: cols[4]?.trim() || '',
+            slug: cols[0] ? String(cols[0]).trim() : '',
+            name: cols[1] ? String(cols[1]).trim() : 'Giáo viên',
+            role: cols[2] ? String(cols[2]).trim() : 'Đang cập nhật',
+            image: cols[3] ? String(cols[3]).trim() : 'https://via.placeholder.com/512',
+            slogan: cols[4] ? String(cols[4]).trim() : '',
             stats: { 
-              courses: cols[5]?.trim() || '0', 
-              students: cols[6]?.trim() || '0' 
+              courses: cols[5] ? String(cols[5]).trim() : '0', 
+              students: cols[6] ? String(cols[6]).trim() : '0' 
             },
-            subjects: (cols[7] || '').split(',').map(s => s.trim()).filter(Boolean),
-            filterSubject: (cols[8] || '').split(',').map(s => s.trim()).filter(Boolean),
-            filterGrade: (cols[9] || '').split(',').map(s => s.trim()).filter(Boolean)
+            subjects: cols[7] ? String(cols[7]).split(',').map(s => s.trim()) : [],
+            filterSubject: cols[8] ? String(cols[8]).split(',').map(s => s.trim()) : [],
+            filterGrade: cols[9] ? String(cols[9]).split(',').map(s => s.trim()) : []
           });
         }
         setTeachers(data);
         setLoading(false);
       })
       .catch(err => {
-        console.error("Lỗi khi tải dữ liệu từ Google Sheets:", err);
+        console.error("Lỗi khi tải:", err);
         setLoading(false);
       });
   }, []);
 
   const filteredTeachers = teachers.filter((teacher) => {
-    const matchSubject = selectedSubject === 'all' || (teacher.filterSubject && teacher.filterSubject.includes(selectedSubject));
-    const matchGrade = selectedGrade === 'all' || (teacher.filterGrade && teacher.filterGrade.includes(selectedGrade));
+    const matchSubject = selectedSubject === 'all' || (Array.isArray(teacher.filterSubject) && teacher.filterSubject.includes(selectedSubject));
+    const matchGrade = selectedGrade === 'all' || (Array.isArray(teacher.filterGrade) && teacher.filterGrade.includes(selectedGrade));
     return matchSubject && matchGrade;
   });
 
@@ -101,9 +104,6 @@ export default function TeachersPage() {
                 <option value="khtn">Khoa học Tự nhiên</option>
                 <option value="tin">Tin học</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-              </div>
             </div>
             <div className="relative">
               <select 
@@ -115,9 +115,6 @@ export default function TeachersPage() {
                 <option value="thcs">Khối THCS</option>
                 <option value="thpt">Khối THPT</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-              </div>
             </div>
           </div>
         </div>
@@ -138,7 +135,7 @@ export default function TeachersPage() {
                   <div className="h-64 bg-gray-200 overflow-hidden relative">
                     <img 
                       src={teacher.image || 'https://via.placeholder.com/512'} 
-                      alt={teacher.name}
+                      alt={teacher.name || 'Ảnh giáo viên'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
@@ -146,7 +143,7 @@ export default function TeachersPage() {
                     <h3 className="text-2xl font-bold text-gray-800 mb-1">{teacher.name}</h3>
                     <p className="text-blue-600 font-medium text-sm mb-4 line-clamp-1" title={teacher.role}>{teacher.role}</p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {teacher.subjects && teacher.subjects.map((sub: string, i: number) => (
+                      {teacher.subjects && Array.isArray(teacher.subjects) && teacher.subjects.map((sub: string, i: number) => (
                         <span key={i} className="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-1 rounded-md border border-blue-100">{sub}</span>
                       ))}
                     </div>
@@ -163,7 +160,7 @@ export default function TeachersPage() {
                       </div>
                     </div>
                     <Link 
-                      href={`/teachers/${teacher.slug}`}
+                      href={`/teachers/${teacher.slug || '#'}`}
                       className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors mt-auto"
                     >
                       Xem chi tiết hồ sơ
