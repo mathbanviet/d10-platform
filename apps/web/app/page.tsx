@@ -96,7 +96,7 @@ export default function HomePage() {
           <div className="hidden lg:block lg:col-span-3 rounded-xl overflow-hidden shadow-sm h-full border border-gray-200">
             <Link href="/courses">
               <img 
-                src="https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=800&auto=format&fit=crop" 
+                src="https://i.postimg.cc/NfrWDL9z/hocso7.png" 
                 alt="Banner Quảng cáo" 
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 cursor-pointer"
               />
