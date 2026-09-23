@@ -18,7 +18,8 @@ const SIDEBAR_MENU = [
 const BANNERS = [
   { id: 1, url: 'https://i.postimg.cc/zGt47WDP/hoso3.png', alt: 'Khóa học Toàn diện' },
   { id: 2, url: 'https://i.postimg.cc/K8qCfLcp/hocso4.png', alt: 'Luyện thi vào 10' },
-  { id: 3, url: 'https://i.postimg.cc/26pc97sw/hocso5.png', alt: 'Đội ngũ giáo viên' }
+  { id: 3, url: 'https://i.postimg.cc/c4ZHGq7J/hocso6.png', alt: 'Luyện thi vào 10' },
+  { id: 4, url: 'https://i.postimg.cc/26pc97sw/hocso5.png', alt: 'Đội ngũ giáo viên' }
 ];
 
 export default function HomePage() {
