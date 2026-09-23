@@ -29,7 +29,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "katex": "^0.18.7",
     "postcss": "^8.5.28",
+    "react-latex-next": "^3.0.0",
     "tailwindcss": "^4.3.3"
   }
 }

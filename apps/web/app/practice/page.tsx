@@ -3,11 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+// 1. IMPORT THƯ VIỆN LATEX
+import 'katex/dist/katex.min.css';
+import Latex from 'react-latex-next';
+
+// 2. DỮ LIỆU ĐÃ CHUYỂN SANG CHUẨN LATEX (Bọc trong dấu $)
+// Chú ý: Ký hiệu ngoặc nhọn hoặc \ phải thêm một dấu \ phía trước trong chuỗi string của JS
 const MOCK_QUESTIONS = [
-  { id: 1, content: 'Tập nghiệm của phương trình x^2 - 4 = 0 là:', options: ['A. {2}', 'B. {-2}', 'C. {-2; 2}', 'D. Vô nghiệm'], correct: 2 },
-  { id: 2, content: 'Đạo hàm của hàm số y = sin(x) là:', options: ['A. y\' = cos(x)', 'B. y\' = -cos(x)', 'C. y\' = sin(x)', 'D. y\' = -sin(x)'], correct: 0 },
-  { id: 3, content: 'Cho khối chóp có diện tích đáy B=3, chiều cao h=4. Thể tích khối chóp là:', options: ['A. 12', 'B. 4', 'C. 6', 'D. 36'], correct: 1 },
-  { id: 4, content: 'Thuật toán đệ quy là thuật toán có đặc điểm gì?', options: ['A. Gọi lại chính nó', 'B. Lặp vô hạn', 'C. Không có điều kiện dừng', 'D. Chạy nhanh nhất'], correct: 0 },
+  { id: 1, content: 'Tập nghiệm của phương trình $x^2 - 4 = 0$ là:', options: ['A. $\\{2\\}$', 'B. $\\{-2\\}$', 'C. $\\{-2; 2\\}$', 'D. Vô nghiệm'], correct: 2 },
+  { id: 2, content: 'Đạo hàm của hàm số $y = \\sin(x)$ là:', options: ['A. $y\' = \\cos(x)$', 'B. $y\' = -\\cos(x)$', 'C. $y\' = \\sin(x)$', 'D. $y\' = -\\sin(x)$'], correct: 0 },
+  { id: 3, content: 'Cho khối chóp có diện tích đáy $B=3$, chiều cao $h=4$. Thể tích khối chóp là:', options: ['A. $12$', 'B. $4$', 'C. $6$', 'D. $36$'], correct: 1 },
+  { id: 4, content: 'Một hệ phương trình bậc nhất hai ẩn có đồ thị là hai đường thẳng song song thì hệ đó:', options: ['A. Có vô số nghiệm', 'B. Vô nghiệm', 'C. Có nghiệm duy nhất', 'D. Không xác định'], correct: 1 },
 ];
 
 export default function PracticeRoomPage() {
@@ -57,7 +63,6 @@ export default function PracticeRoomPage() {
 
   const currentQ = MOCK_QUESTIONS[currentQuestionIdx];
 
-  // CHẶN LỖI VERCEL Ở ĐÂY: Khẳng định với TypeScript là currentQ luôn tồn tại
   if (!currentQ) {
     return <div className="min-h-screen flex items-center justify-center">Đang tải câu hỏi...</div>;
   }
@@ -163,9 +168,10 @@ export default function PracticeRoomPage() {
             <h2 className="text-2xl font-bold text-blue-800 mb-4 pb-4 border-b border-gray-100">
               Câu {currentQuestionIdx + 1}:
             </h2>
-            <p className="text-lg text-gray-800 leading-relaxed font-medium">
-              {currentQ.content}
-            </p>
+            {/* 3. SỬ DỤNG THẺ <Latex> ĐỂ RENDER CÂU HỎI */}
+            <div className="text-lg text-gray-800 leading-relaxed font-medium">
+              <Latex>{currentQ.content}</Latex>
+            </div>
           </div>
 
           <div className="space-y-4 mb-10">
@@ -185,9 +191,10 @@ export default function PracticeRoomPage() {
                     value={optIdx}
                     checked={isSelected}
                     onChange={() => handleSelectOption(currentQ.id, optIdx)}
-                    className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 mr-4"
+                    className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 mr-4 flex-shrink-0"
                   />
-                  <span className="text-lg font-medium">{opt}</span>
+                  {/* 4. SỬ DỤNG THẺ <Latex> ĐỂ RENDER ĐÁP ÁN */}
+                  <span className="text-lg font-medium flex-grow"><Latex>{opt}</Latex></span>
                 </label>
               );
             })}
