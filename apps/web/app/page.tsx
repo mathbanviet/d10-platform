@@ -16,9 +16,9 @@ const SIDEBAR_MENU = [
 
 // BANNER TRƯỢT Ở GIỮA
 const BANNERS = [
-  { id: 1, url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop', alt: 'Khóa học Toàn diện' },
-  { id: 2, url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1200&auto=format&fit=crop', alt: 'Luyện thi vào 10' },
-  { id: 3, url: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=1200&auto=format&fit=crop', alt: 'Đội ngũ giáo viên' }
+  { id: 1, url: 'https://i.postimg.cc/zGt47WDP/hoso3.png', alt: 'Khóa học Toàn diện' },
+  { id: 2, url: 'https://i.postimg.cc/K8qCfLcp/hocso4.png', alt: 'Luyện thi vào 10' },
+  { id: 3, url: 'https://i.postimg.cc/26pc97sw/hocso5.png', alt: 'Đội ngũ giáo viên' }
 ];
 
 export default function HomePage() {
