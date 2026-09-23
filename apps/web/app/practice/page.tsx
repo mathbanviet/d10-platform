@@ -119,32 +119,37 @@ export default function PracticeRoomPage() {
 
   return (
     <>
-      {/* ĐOẠN CSS BỌC THÉP TRỊ LỖI FONT CHỮ VÀ SỐ MŨ */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* 1. Ép toàn bộ công thức dùng chung font có chân chuẩn SGK */
-        .katex, .katex * { 
-          font-family: 'Times New Roman', serif !important; 
-        }
-        
-        /* 2. Ép các biến số (x, y, z, t...) in nghiêng theo đúng chuẩn Toán học */
-        .katex .mathnormal {
-          font-style: italic !important;
-        }
-
-        /* 3. Tăng kích thước tổng thể công thức cho dễ nhìn */
+        /* 1. Thiết lập font chung, cỡ chữ chung */
         .katex { 
           font-size: 1.15em !important; 
           line-height: normal !important;
         }
+        
+        /* 2. Áp dụng font Times New Roman cho các hệ số, dấu ngoặc, phép tính */
+        .katex .mord, .katex .mbin, .katex .mrel, .katex .mopen, .katex .mclose, .katex .minner { 
+          font-family: 'Times New Roman', serif !important; 
+        }
+        
+        /* 3. Các biến số (x, y, z...) in nghiêng */
+        .katex .mathnormal {
+          font-style: italic !important;
+          font-family: 'Times New Roman', serif !important; 
+        }
 
-        /* 4. CHÌA KHÓA: Ép số mũ, chỉ số nhỏ lại 30% so với hệ số */
+        /* 4. CHÌA KHÓA: Khôi phục lại font đặc biệt (AMS) cho tập hợp số R, N, Z */
+        .katex .mathbb, .katex .mathbb * {
+          font-family: 'KaTeX_AMS' !important;
+        }
+
+        /* 5. Ép số mũ, chỉ số nhỏ lại 30% so với hệ số */
         .katex .supsub .mtight, 
         .katex .sizing .mtight,
         .katex .vlist-t .mord.mtight {
           font-size: 0.7em !important; 
         }
 
-        /* 5. Căn chỉnh phân số nét thanh, không dính */
+        /* 6. Căn chỉnh phân số */
         .katex .frac-line { 
           border-bottom-width: 1.5px !important; 
           border-bottom-style: solid !important; 
