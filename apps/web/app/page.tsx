@@ -1,10 +1,98 @@
+"use client";
+
+import { useState, useEffect } from 'react';
 import Link from "next/link";
 
+// 1. DANH SÁCH ẢNH BANNER 
+const BANNERS = [
+  {
+    id: 1,
+    url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2000&auto=format&fit=crop',
+    alt: 'Môi trường học tập chuyên nghiệp'
+  },
+  {
+    id: 2,
+    url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=2000&auto=format&fit=crop',
+    alt: 'Luyện thi THPT Quốc gia'
+  },
+  {
+    id: 3,
+    url: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=2000&auto=format&fit=crop',
+    alt: 'Đội ngũ giáo viên tận tâm'
+  }
+];
+
 export default function HomePage() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // 2. LOGIC TỰ ĐỘNG CHUYỂN ẢNH SAU MỖI 5 GIÂY
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev === BANNERS.length - 1 ? 0 : prev + 1));
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const nextSlide = () => setCurrentSlide(prev => (prev === BANNERS.length - 1 ? 0 : prev + 1));
+  const prevSlide = () => setCurrentSlide(prev => (prev === 0 ? BANNERS.length - 1 : prev - 1));
+
   return (
     <>
-      {/* BANNER TRANG CHỦ */}
-      <section className="bg-blue-600 text-white py-24 px-4 text-center">
+      {/* ================= PHẦN 1: BANNER SLIDER TỰ ĐỘNG ================= */}
+      <div className="relative w-full h-[250px] md:h-[450px] lg:h-[550px] overflow-hidden group">
+        
+        {/* Các lớp ảnh mờ dần (Fade in/out) */}
+        {BANNERS.map((banner, index) => (
+          <div
+            key={banner.id}
+            className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
+              index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            }`}
+          >
+            <img 
+              src={banner.url} 
+              alt={banner.alt} 
+              className="w-full h-full object-cover"
+            />
+            {/* Phủ một lớp đen mờ mờ */}
+            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+          </div>
+        ))}
+
+        {/* Nút bấm Sang Trái */}
+        <button 
+          onClick={prevSlide}
+          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white bg-opacity-40 hover:bg-opacity-100 text-gray-800 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md"
+        >
+          <svg className="w-5 h-5 md:w-6 md:h-6 pr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+        </button>
+
+        {/* Nút bấm Sang Phải */}
+        <button 
+          onClick={nextSlide}
+          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white bg-opacity-40 hover:bg-opacity-100 text-gray-800 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md"
+        >
+          <svg className="w-5 h-5 md:w-6 md:h-6 pl-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+        </button>
+
+        {/* Các dấu chấm tròn (Dots) báo hiệu vị trí ảnh */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2.5">
+          {BANNERS.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentSlide(idx)}
+              className={`transition-all duration-300 rounded-full shadow-sm ${
+                idx === currentSlide 
+                  ? 'w-8 h-2.5 bg-blue-600' 
+                  : 'w-2.5 h-2.5 bg-white bg-opacity-70 hover:bg-opacity-100'
+              }`}
+            ></button>
+          ))}
+        </div>
+      </div>
+
+      {/* ================= PHẦN 2: THÔNG ĐIỆP TRANG CHỦ (Của Thầy giữ nguyên) ================= */}
+      <section className="bg-blue-600 text-white py-16 px-4 text-center">
         <div className="max-w-4xl mx-auto mt-4">
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-wide">
             Học mọi lúc - Vươn xa cùng <span className="text-yellow-400">SỐ</span>
@@ -20,8 +108,9 @@ export default function HomePage() {
             >
               Đăng ký học ngay
             </Link>
+            {/* Đã cập nhật link vào /practice (Phòng luyện) thay vì /exam để khớp cấu trúc hệ thống */}
             <Link 
-              href="/exam" 
+              href="/practice" 
               className="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-full hover:bg-white hover:text-blue-600 transition-colors shadow-lg"
             >
               Làm bài kiểm tra NL
@@ -30,7 +119,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CHƯƠNG TRÌNH ĐÀO TẠO TRỌNG TÂM */}
+      {/* ================= PHẦN 3: CHƯƠNG TRÌNH ĐÀO TẠO TRỌNG TÂM (Của Thầy giữ nguyên) ================= */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-center text-blue-800 mb-12 uppercase tracking-wide">
