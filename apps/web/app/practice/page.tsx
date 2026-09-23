@@ -76,33 +76,14 @@ export default function PracticeMenuPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] flex flex-col font-sans text-gray-800">
+    <div className="min-h-screen bg-[#f4f6f8] flex flex-col font-sans text-gray-800 pb-20">
       
-      {/* HEADER NAVBAR (ĐIỂM 10+ ONLINE) */}
-      <div className="bg-blue-600 text-white shadow-sm py-3 px-6 flex items-center justify-between z-20 sticky top-0">
-        <div className="text-2xl font-black tracking-wider flex items-center gap-2">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-          ĐIỂM 10+ LMS
-        </div>
-        <div className="hidden md:flex gap-8 font-bold text-sm uppercase">
-          <Link href="/" className="hover:text-blue-200 transition">Trang chủ</Link>
-          <Link href="/courses" className="hover:text-blue-200 transition">Khóa học</Link>
-          <Link href="/teachers" className="hover:text-blue-200 transition">Giáo viên</Link>
-          <Link href="/practice" className="text-yellow-300 border-b-2 border-yellow-300 pb-1">Phòng luyện</Link>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-          </div>
-          <div className="w-9 h-9 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center font-bold text-blue-900 cursor-pointer">
-            D10
-          </div>
-        </div>
-      </div>
+      {/* ĐÃ XÓA BỎ HEADER THỪA Ở ĐÂY ĐỂ DÙNG HEADER GỐC CỦA TRANG CHỦ */}
 
-      <div className="flex flex-1 max-w-[1500px] w-full mx-auto p-4 md:p-6 gap-8">
+      {/* Thêm pt-6 để cách khoảng nhỏ với Header gốc cho đẹp */}
+      <div className="flex flex-1 max-w-[1500px] w-full mx-auto p-4 md:p-6 pt-6 gap-8">
         
-        {/* SIDEBAR BÊN TRÁI (Chuẩn LearnUp) */}
+        {/* SIDEBAR BÊN TRÁI */}
         <div className="hidden md:flex w-64 flex-col gap-6 flex-shrink-0">
           
           {/* Menu công cụ */}
@@ -257,7 +238,6 @@ export default function PracticeMenuPage() {
                           {/* Dòng Tên Bài học */}
                           <div className="flex items-start gap-3 mb-2">
                             <div className="mt-0.5 w-6 h-6 rounded flex items-center justify-center">
-                              {/* Icon quyển sách màu hồng nhạt chuẩn LearnUp */}
                               <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             </div>
                             <div>
@@ -275,8 +255,7 @@ export default function PracticeMenuPage() {
                                 className="flex items-center justify-between py-3 border-b border-dashed border-gray-200 hover:bg-gray-50 group transition px-2 rounded -mx-2"
                               >
                                 <div className="flex items-start gap-3">
-                                  {/* Icon văn bản màu xanh dương chuẩn LearnUp */}
-                                  <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
+                                  <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" /></svg>
                                   <span className="text-[14px] font-medium text-gray-700 group-hover:text-blue-600 transition-colors leading-snug pr-4">{test.name}</span>
                                 </div>
                                 <svg className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-transform transform group-hover:translate-x-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
