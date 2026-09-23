@@ -5,7 +5,6 @@ import Link from 'next/link';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
 
-// ĐÃ NÂNG CẤP: Dùng \overrightarrow cho vector và \displaystyle cho phân số
 const MOCK_QUESTIONS = [
   { id: 1, content: 'Hàm số $y = x^3 - 3x + 1$ đồng biến trên khoảng nào dưới đây?', options: ['A. $(-1; 1)$', 'B. $(1; +\\infty)$', 'C. $(-\\infty; 1)$', 'D. $\\mathbb{R}$'], correct: 1 },
   { id: 2, content: 'Điểm cực tiểu của đồ thị hàm số $y = x^3 - 3x + 1$ là:', options: ['A. $(1; -1)$', 'B. $(-1; 3)$', 'C. $(1; 1)$', 'D. $(-1; -1)$'], correct: 0 },
@@ -120,30 +119,32 @@ export default function PracticeRoomPage() {
 
   return (
     <>
-      {/* ĐOẠN CSS BỌC THÉP TRỊ LỖI TAILWIND PHÁ KATEX (PHIÊN BẢN NÂNG CẤP) */}
+      {/* ĐOẠN CSS BỌC THÉP TRỊ LỖI FONT CHỮ VÀ SỐ MŨ */}
       <style dangerouslySetInnerHTML={{__html: `
-        .katex { 
-          line-height: normal !important; 
-          font-size: 1.05em !important; 
+        /* 1. Ép toàn bộ công thức dùng chung font có chân chuẩn SGK */
+        .katex, .katex * { 
+          font-family: 'Times New Roman', serif !important; 
         }
-        /* Ép các con số, dấu ngoặc, hệ số dùng chung font có chân (Serif) chuẩn SGK */
-        .katex .mord, 
-        .katex .mbin, 
-        .katex .mrel, 
-        .katex .mopen, 
-        .katex .mclose, 
-        .katex .minner {
-          font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
-        }
-        /* Biến số x, y, z giữ nguyên in nghiêng chuẩn Toán */
+        
+        /* 2. Ép các biến số (x, y, z, t...) in nghiêng theo đúng chuẩn Toán học */
         .katex .mathnormal {
-          font-family: 'KaTeX_Math', 'Times New Roman', serif !important;
+          font-style: italic !important;
         }
-        /* Ép kích thước số mũ (superscript) và chỉ số dưới nhỏ hơn so với hệ số */
-        .katex .supsub {
-          font-size: 0.75em !important;
+
+        /* 3. Tăng kích thước tổng thể công thức cho dễ nhìn */
+        .katex { 
+          font-size: 1.15em !important; 
+          line-height: normal !important;
         }
-        /* Sửa lỗi đường kẻ phân số bị mờ hoặc dính */
+
+        /* 4. CHÌA KHÓA: Ép số mũ, chỉ số nhỏ lại 30% so với hệ số */
+        .katex .supsub .mtight, 
+        .katex .sizing .mtight,
+        .katex .vlist-t .mord.mtight {
+          font-size: 0.7em !important; 
+        }
+
+        /* 5. Căn chỉnh phân số nét thanh, không dính */
         .katex .frac-line { 
           border-bottom-width: 1.5px !important; 
           border-bottom-style: solid !important; 
