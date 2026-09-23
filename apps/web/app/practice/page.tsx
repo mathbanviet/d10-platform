@@ -120,12 +120,30 @@ export default function PracticeRoomPage() {
 
   return (
     <>
-      {/* ĐOẠN CSS BỌC THÉP TRỊ LỖI TAILWIND PHÁ KATEX */}
+      {/* ĐOẠN CSS BỌC THÉP TRỊ LỖI TAILWIND PHÁ KATEX (PHIÊN BẢN NÂNG CẤP) */}
       <style dangerouslySetInnerHTML={{__html: `
         .katex { 
           line-height: normal !important; 
           font-size: 1.05em !important; 
         }
+        /* Ép các con số, dấu ngoặc, hệ số dùng chung font có chân (Serif) chuẩn SGK */
+        .katex .mord, 
+        .katex .mbin, 
+        .katex .mrel, 
+        .katex .mopen, 
+        .katex .mclose, 
+        .katex .minner {
+          font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
+        }
+        /* Biến số x, y, z giữ nguyên in nghiêng chuẩn Toán */
+        .katex .mathnormal {
+          font-family: 'KaTeX_Math', 'Times New Roman', serif !important;
+        }
+        /* Ép kích thước số mũ (superscript) và chỉ số dưới nhỏ hơn so với hệ số */
+        .katex .supsub {
+          font-size: 0.75em !important;
+        }
+        /* Sửa lỗi đường kẻ phân số bị mờ hoặc dính */
         .katex .frac-line { 
           border-bottom-width: 1.5px !important; 
           border-bottom-style: solid !important; 
