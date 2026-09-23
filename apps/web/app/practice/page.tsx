@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// DỮ LIỆU GIẢ LẬP ĐÃ THÊM ĐÁP ÁN ĐÚNG (correct là vị trí đáp án: 0=A, 1=B, 2=C, 3=D)
 const MOCK_QUESTIONS = [
   { id: 1, content: 'Tập nghiệm của phương trình x^2 - 4 = 0 là:', options: ['A. {2}', 'B. {-2}', 'C. {-2; 2}', 'D. Vô nghiệm'], correct: 2 },
   { id: 2, content: 'Đạo hàm của hàm số y = sin(x) là:', options: ['A. y\' = cos(x)', 'B. y\' = -cos(x)', 'C. y\' = sin(x)', 'D. y\' = -sin(x)'], correct: 0 },
@@ -14,17 +13,15 @@ const MOCK_QUESTIONS = [
 export default function PracticeRoomPage() {
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 phút
+  const [timeLeft, setTimeLeft] = useState(15 * 60); 
   
-  // Các biến trạng thái cho việc Nộp bài và Chấm điểm
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [timeSpent, setTimeSpent] = useState(0);
 
-  // Đồng hồ đếm ngược
   useEffect(() => {
     if (isSubmitted || timeLeft <= 0) {
-      if (timeLeft <= 0 && !isSubmitted) handleSubmit(); // Hết giờ tự động nộp
+      if (timeLeft <= 0 && !isSubmitted) handleSubmit(); 
       return;
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
@@ -38,17 +35,15 @@ export default function PracticeRoomPage() {
   };
 
   const handleSelectOption = (qId: number, optIdx: number) => {
-    if (isSubmitted) return; // Đã nộp thì không cho sửa
+    if (isSubmitted) return; 
     setAnswers(prev => ({ ...prev, [qId]: optIdx }));
   };
 
-  // HÀM CHẤM ĐIỂM TỰ ĐỘNG
   const handleSubmit = () => {
     const isConfirm = confirm("Bạn có chắc chắn muốn nộp bài không?");
     if (!isConfirm) return;
 
     let correctCount = 0;
-    // Duyệt qua từng câu hỏi để chấm
     MOCK_QUESTIONS.forEach((q) => {
       if (answers[q.id] === q.correct) {
         correctCount++;
@@ -56,16 +51,20 @@ export default function PracticeRoomPage() {
     });
 
     setScore(correctCount);
-    setTimeSpent(15 * 60 - timeLeft); // Tính thời gian đã làm
+    setTimeSpent(15 * 60 - timeLeft); 
     setIsSubmitted(true);
   };
 
   const currentQ = MOCK_QUESTIONS[currentQuestionIdx];
 
-  // GIAO DIỆN BÁO CÁO KẾT QUẢ KHI ĐÃ NỘP BÀI
+  // CHẶN LỖI VERCEL Ở ĐÂY: Khẳng định với TypeScript là currentQ luôn tồn tại
+  if (!currentQ) {
+    return <div className="min-h-screen flex items-center justify-center">Đang tải câu hỏi...</div>;
+  }
+
   if (isSubmitted) {
     const totalQ = MOCK_QUESTIONS.length;
-    const score10 = ((score / totalQ) * 10).toFixed(1); // Điểm hệ số 10
+    const score10 = ((score / totalQ) * 10).toFixed(1); 
 
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center font-sans">
@@ -111,11 +110,8 @@ export default function PracticeRoomPage() {
     );
   }
 
-  // GIAO DIỆN PHÒNG LÀM BÀI CHÍNH
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans pb-10">
-      
-      {/* Thanh công cụ thời gian nằm trên cùng */}
       <div className="bg-white shadow-sm flex justify-between items-center px-4 md:px-8 py-3 mb-6">
         <h1 className="text-lg font-bold text-gray-700 hidden md:block">BÀI KIỂM TRA ĐÁNH GIÁ NĂNG LỰC</h1>
         <div className="flex items-center gap-6 ml-auto">
@@ -135,8 +131,6 @@ export default function PracticeRoomPage() {
       </div>
 
       <div className="flex flex-col md:flex-row max-w-7xl w-full mx-auto px-4 gap-6">
-        
-        {/* CỘT BÊN TRÁI: Danh sách câu hỏi */}
         <div className="w-full md:w-1/4 bg-white rounded-xl shadow-sm p-5 border border-gray-200 self-start">
           <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Danh sách câu hỏi</h3>
           <div className="grid grid-cols-5 gap-2">
@@ -164,7 +158,6 @@ export default function PracticeRoomPage() {
           </div>
         </div>
 
-        {/* CỘT BÊN PHẢI: Khung làm bài */}
         <div className="w-full md:w-3/4 bg-white rounded-xl shadow-sm p-6 md:p-10 border border-gray-200 flex flex-col">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-blue-800 mb-4 pb-4 border-b border-gray-100">
@@ -209,7 +202,6 @@ export default function PracticeRoomPage() {
               ← Câu trước
             </button>
 
-            {/* NẾU LÀ CÂU CUỐI CÙNG SẼ HIỆN NÚT NỘP BÀI TO BỰ Ở ĐÂY */}
             {currentQuestionIdx === MOCK_QUESTIONS.length - 1 ? (
               <button 
                 onClick={handleSubmit}
@@ -226,7 +218,6 @@ export default function PracticeRoomPage() {
               </button>
             )}
           </div>
-
         </div>
       </div>
     </div>
