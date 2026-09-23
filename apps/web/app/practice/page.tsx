@@ -10,10 +10,16 @@ import Latex from 'react-latex-next';
 // 2. DỮ LIỆU ĐÃ CHUYỂN SANG CHUẨN LATEX (Bọc trong dấu $)
 // Chú ý: Ký hiệu ngoặc nhọn hoặc \ phải thêm một dấu \ phía trước trong chuỗi string của JS
 const MOCK_QUESTIONS = [
-  { id: 1, content: 'Tập nghiệm của phương trình $x^2 - 4 = 0$ là:', options: ['A. $\\{2\\}$', 'B. $\\{-2\\}$', 'C. $\\{-2; 2\\}$', 'D. Vô nghiệm'], correct: 2 },
-  { id: 2, content: 'Đạo hàm của hàm số $y = \\sin(x)$ là:', options: ['A. $y\' = \\cos(x)$', 'B. $y\' = -\\cos(x)$', 'C. $y\' = \\sin(x)$', 'D. $y\' = -\\sin(x)$'], correct: 0 },
-  { id: 3, content: 'Cho khối chóp có diện tích đáy $B=3$, chiều cao $h=4$. Thể tích khối chóp là:', options: ['A. $12$', 'B. $4$', 'C. $6$', 'D. $36$'], correct: 1 },
-  { id: 4, content: 'Một hệ phương trình bậc nhất hai ẩn có đồ thị là hai đường thẳng song song thì hệ đó:', options: ['A. Có vô số nghiệm', 'B. Vô nghiệm', 'C. Có nghiệm duy nhất', 'D. Không xác định'], correct: 1 },
+  { id: 1, content: 'Hàm số $y = x^3 - 3x + 1$ đồng biến trên khoảng nào dưới đây?', options: ['A. $(-1; 1)$', 'B. $(1; +\\infty)$', 'C. $(-\\infty; 1)$', 'D. $\\mathbb{R}$'], correct: 1 },
+  { id: 2, content: 'Điểm cực tiểu của đồ thị hàm số $y = x^3 - 3x + 1$ là:', options: ['A. $(1; -1)$', 'B. $(-1; 3)$', 'C. $(1; 1)$', 'D. $(-1; -1)$'], correct: 0 },
+  { id: 3, content: 'Giá trị lớn nhất của hàm số $y = \\frac{2x-1}{x+1}$ trên đoạn $[0; 2]$ bằng:', options: ['A. $-1$', 'B. $1$', 'C. $2$', 'D. $\\frac{1}{2}$'], correct: 1 },
+  { id: 4, content: 'Đường tiệm cận đứng của đồ thị hàm số $y = \\frac{2x+1}{x-1}$ có phương trình là:', options: ['A. $y = 2$', 'B. $x = 2$', 'C. $x = 1$', 'D. $y = 1$'], correct: 2 },
+  { id: 5, content: 'Trong không gian $Oxyz$, hình chiếu vuông góc của điểm $A(1; -2; 3)$ lên mặt phẳng $(Oxy)$ có tọa độ là:', options: ['A. $(1; -2; 0)$', 'B. $(0; 0; 3)$', 'C. $(1; 0; 3)$', 'D. $(0; -2; 0)$'], correct: 0 },
+  { id: 6, content: 'Trong không gian $Oxyz$, cho hai vectơ $\\vec{a} = (2; -1; 3)$ và $\\vec{b} = (1; 2; -1)$. Tọa độ của vectơ $\\vec{u} = \\vec{a} + 2\\vec{b}$ là:', options: ['A. $(4; 3; 1)$', 'B. $(3; 1; 2)$', 'C. $(4; -3; 1)$', 'D. $(0; 3; 1)$'], correct: 0 },
+  { id: 7, content: 'Trong không gian $Oxyz$, tích vô hướng của hai vectơ $\\vec{u} = (1; 2; -1)$ và $\\vec{v} = (2; 1; 4)$ bằng:', options: ['A. $8$', 'B. $0$', 'C. $-1$', 'D. $4$'], correct: 1 },
+  { id: 8, content: 'Để đo mức độ phân tán của một mẫu số liệu ghép nhóm, người ta KHÔNG dùng đại lượng nào sau đây?', options: ['A. Khoảng biến thiên', 'B. Phương sai', 'C. Độ lệch chuẩn', 'D. Số trung bình cộng'], correct: 3 },
+  { id: 9, content: 'Một vật chuyển động có phương trình $s(t) = -t^3 + 6t^2 + 15t$ (trong đó $t$ tính bằng giây, $s$ tính bằng mét). Vận tốc lớn nhất của vật đạt được là:', options: ['A. $27$ m/s', 'B. $15$ m/s', 'C. $36$ m/s', 'D. $24$ m/s'], correct: 0 },
+  { id: 10, content: 'Trong không gian $Oxyz$, mặt cầu $(S)$ có tâm $I(1; -2; 3)$ và bán kính $R=5$ có phương trình là:', options: ['A. $(x+1)^2 + (y-2)^2 + (z+3)^2 = 25$', 'B. $(x-1)^2 + (y+2)^2 + (z-3)^2 = 5$', 'C. $(x-1)^2 + (y+2)^2 + (z-3)^2 = 25$', 'D. $(x+1)^2 + (y-2)^2 + (z+3)^2 = 5$'], correct: 2 },
 ];
 
 export default function PracticeRoomPage() {
