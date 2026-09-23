@@ -75,7 +75,6 @@ export default function PracticeMenuPage() {
   const [expandedChapters, setExpandedChapters] = useState<Record<number, boolean>>({ 1: true });
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   
-  // State quản lý Lớp và Môn đang được chọn
   const [selectedGrade, setSelectedGrade] = useState('12');
   const [selectedSubject, setSelectedSubject] = useState('toan');
 
@@ -91,75 +90,90 @@ export default function PracticeMenuPage() {
     setExpandedChapters(newExpandedState);
   };
 
-  // Tìm tên môn học đang chọn để hiển thị ra tiêu đề
   const currentSubjectName = SUBJECTS.find(s => s.id === selectedSubject)?.name || 'Môn học';
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] flex flex-col font-sans text-gray-800 pb-20">
       <div className="flex flex-1 max-w-[1500px] w-full mx-auto p-4 md:p-6 pt-6 gap-8">
         
-        {/* SIDEBAR BÊN TRÁI ĐÃ ĐƯỢC CẬP NHẬT */}
+        {/* SIDEBAR BÊN TRÁI NÂNG CẤP MENU SỔ XUỐNG */}
         <div className="hidden md:flex w-64 flex-col gap-6 flex-shrink-0">
           
-          {/* Box 1: Khối lớp */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden pt-4 pb-2">
-            <div className="px-5 font-bold text-gray-400 text-xs uppercase tracking-widest mb-3 flex items-center justify-between">
-              CHỌN KHỐI LỚP
-            </div>
-            <div className="grid grid-cols-2 gap-1 px-3">
-              {GRADES.map(grade => {
-                const isActive = selectedGrade === grade;
-                return (
-                  <button 
-                    key={grade} 
-                    onClick={() => setSelectedGrade(grade)}
-                    className={`flex items-center justify-center py-2.5 rounded-lg font-bold text-sm transition-all ${
-                      isActive 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Lớp {grade}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Menu công cụ (Tổng quan, Khóa học...) */}
+          <div className="flex flex-col gap-1">
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-blue-600 font-medium transition">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+              Tổng quan
+            </button>
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 text-blue-700 font-bold transition">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+              Khóa học
+            </button>
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-blue-600 font-medium transition">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+              Khảo sát
+            </button>
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-blue-600 font-medium transition">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              Flashcard
+            </button>
+            <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-blue-600 font-medium transition">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              Bảng xếp hạng
+            </button>
           </div>
 
-          {/* Box 2: Môn học */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden pt-4 pb-2">
-            <div className="px-5 font-bold text-gray-400 text-xs uppercase tracking-widest mb-3 flex items-center justify-between">
-              CHỌN MÔN HỌC
+          {/* BOX BỘ LỌC CHƯƠNG TRÌNH (SỔ XUỐNG) */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mt-2">
+            <div className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+              Lọc chương trình
             </div>
-            <div className="flex flex-col text-sm font-medium text-gray-600 px-2 gap-1">
-              {SUBJECTS.map(subject => {
-                const isActive = selectedSubject === subject.id;
-                return (
-                  <button 
-                    key={subject.id} 
-                    onClick={() => setSelectedSubject(subject.id)}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-all ${
-                      isActive 
-                        ? 'bg-blue-50 text-blue-700 font-bold' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="text-lg mr-3 opacity-80">{subject.icon}</span>
-                    {subject.name}
-                    {isActive && (
-                      <span className="ml-auto w-2 h-2 rounded-full bg-blue-600"></span>
-                    )}
-                  </button>
-                );
-              })}
+
+            {/* Khối lớp */}
+            <div className="mb-5">
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Chọn Khối Lớp</label>
+              <div className="relative">
+                <select 
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                  className="appearance-none w-full bg-gray-50 border border-gray-200 text-gray-800 font-bold py-3 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer hover:bg-gray-100"
+                >
+                  {GRADES.map(grade => (
+                    <option key={grade} value={grade}>Lớp {grade}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
             </div>
+
+            {/* Môn học */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Chọn Môn Học</label>
+              <div className="relative">
+                <select 
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="appearance-none w-full bg-gray-50 border border-gray-200 text-gray-800 font-bold py-3 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer hover:bg-gray-100"
+                >
+                  {SUBJECTS.map(subject => (
+                    <option key={subject.id} value={subject.id}>{subject.name}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
         {/* KHU VỰC NỘI DUNG CHÍNH */}
         <div className="flex-1 flex flex-col min-w-0 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-10">
           
-          {/* Breadcrumb & Tiêu đề */}
           <div className="flex items-center text-sm text-gray-400 font-medium mb-4 gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
             <span>Lớp {selectedGrade}</span> <span className="text-gray-300">❯</span> <span>{currentSubjectName}</span> <span className="text-gray-300">❯</span> <span className="text-gray-800 font-bold">Kết nối tri thức</span>
@@ -168,7 +182,6 @@ export default function PracticeMenuPage() {
           <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-1">Kết nối tri thức</h1>
           <p className="text-gray-500 font-medium mb-8">{currentSubjectName} • Lớp {selectedGrade}</p>
           
-          {/* LOGIC HIỂN THỊ THÔNG MINH: Nếu đúng Toán 12 thì ra nội dung, khác thì ra thông báo */}
           {selectedGrade === '12' && selectedSubject === 'toan' ? (
             <>
               {/* 3 Box thống kê */}
@@ -292,7 +305,6 @@ export default function PracticeMenuPage() {
               </div>
             </>
           ) : (
-            /* KHU VỰC HIỂN THỊ KHI CHỌN MÔN KHÁC HOẶC LỚP KHÁC */
             <div className="flex flex-col items-center justify-center py-24 text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
@@ -303,7 +315,6 @@ export default function PracticeMenuPage() {
               </p>
             </div>
           )}
-
         </div>
       </div>
     </div>
