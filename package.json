@@ -27,6 +27,7 @@
     "packages/*"
   ],
   "dependencies": {
+    "@jitsi/react-sdk": "^1.4.4",
     "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/postcss": "^4.3.3",
     "katex": "^0.18.7",
