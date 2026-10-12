@@ -3,18 +3,18 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY_4;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Chưa cấu hình GEMINI_API_KEY' },
+        { error: 'Chưa cấu hình GEMINI_API_KEY_4' },
         { status: 500 }
       );
     }
 
     // Gọi API bằng khóa chuẩn AIzaSy... thông qua query ?key=
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
