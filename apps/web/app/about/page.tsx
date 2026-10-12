@@ -38,7 +38,7 @@ export default function AboutPage() {
             {/* Ảnh đại diện giới thiệu */}
             <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20">
               <img 
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop" 
+                src="https://i.postimg.cc/hGHFbG5g/gioi-thieu-1.png" 
                 alt="Học sinh Điểm 10+" 
                 className="w-full h-auto object-cover"
               />
@@ -65,8 +65,8 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <img src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=600&auto=format&fit=crop" alt="Classroom" className="rounded-xl w-full h-48 object-cover shadow-sm" />
-            <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=600&auto=format&fit=crop" alt="Study" className="rounded-xl w-full h-48 object-cover shadow-sm mt-8" />
+            <img src="https://i.postimg.cc/rsyLzPHY/diem10-260x192.png" alt="Classroom" className="rounded-xl w-full h-48 object-cover shadow-sm" />
+            <img src="https://i.postimg.cc/fyYBnzCc/lop-hoc-800x533.png?q=80&w=600&auto=format&fit=crop" alt="Study" className="rounded-xl w-full h-48 object-cover shadow-sm mt-8" />
           </div>
         </div>
       </div>
