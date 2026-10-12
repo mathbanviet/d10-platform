@@ -12,15 +12,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Sử dụng Authorization Bearer cho token dạng AQ...
+    // Gọi API bằng khóa chuẩn AIzaSy... thông qua query ?key=
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [
             {
@@ -37,12 +34,11 @@ export async function POST(req: Request) {
     );
 
     const data = await response.json();
-    
-    // Kiểm tra nếu API trả về lỗi
+
     if (!response.ok) {
       console.error("Gemini API Error:", data);
       return NextResponse.json(
-        { reply: 'Xin lỗi Thầy, hệ thống AI đang gặp chút gián đoạn kết nối.' },
+        { reply: `Xin lỗi Thầy, Google API báo lỗi: ${data?.error?.message || 'Kiểm tra lại khóa API'}` },
         { status: 200 }
       );
     }
