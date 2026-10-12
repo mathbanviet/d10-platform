@@ -12,12 +12,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Gọi trực tiếp REST API của Gemini 1.5 Flash (Bản nhanh & miễn phí)
+    // Sử dụng Authorization Bearer cho token dạng AQ...
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -34,12 +37,23 @@ export async function POST(req: Request) {
     );
 
     const data = await response.json();
+    
+    // Kiểm tra nếu API trả về lỗi
+    if (!response.ok) {
+      console.error("Gemini API Error:", data);
+      return NextResponse.json(
+        { reply: 'Xin lỗi Thầy, hệ thống AI đang gặp chút gián đoạn kết nối.' },
+        { status: 200 }
+      );
+    }
+
     const replyText =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ||
       'Xin lỗi, em chưa thể trả lời câu hỏi này lúc này.';
 
     return NextResponse.json({ reply: replyText });
   } catch (error) {
+    console.error("Server Error:", error);
     return NextResponse.json(
       { error: 'Lỗi kết nối máy chủ AI' },
       { status: 500 }
