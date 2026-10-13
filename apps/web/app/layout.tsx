@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
+import AuthModal from "./AuthModal";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -13,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Điểm 10+ Online | Hệ thống học tập",
+  title: "Điểm 10⁺ Online | Hệ thống học tập",
   description: "Nền tảng học trực tuyến chất lượng cao",
 };
 
@@ -31,30 +32,28 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-2xl font-bold tracking-wider cursor-pointer">
+              <Link href="/" className="text-2xl font-bold tracking-wider cursor-pointer whitespace-nowrap">
                 <span className="text-yellow-400">ĐIỂM 10⁺</span> ONLINE
               </Link>
             </div>
             
             {/* Menu */}
-            <nav className="hidden md:flex items-center space-x-6 font-medium">
+            <nav className="hidden md:flex items-center space-x-6 font-medium whitespace-nowrap">
               <Link href="/" className="hover:text-yellow-300 transition-colors">Trang chủ</Link>
               <Link href="/about" className="hover:text-yellow-300 transition-colors">Giới thiệu</Link>
               <Link href="/courses" className="hover:text-yellow-300 transition-colors">Khóa học</Link>
               <Link href="/practice" className="text-yellow-300 font-bold drop-shadow-sm">Phòng luyện</Link>
               <Link href="/teachers" className="hover:text-yellow-300 transition-colors">Giáo viên</Link>
-<Link href="/ichat" className="hover:text-yellow-300 transition-colors flex items-center gap-1">
-  iChat - Hỏi đáp AI
-</Link>
-<Link href="/guide" className="hover:text-yellow-300 transition-colors">Hướng dẫn Đăng ký</Link>
+              <Link href="/ichat" className="hover:text-yellow-300 transition-colors flex items-center gap-1">
+                iChat - Hỏi đáp AI
+              </Link>
+              <Link href="/guide" className="hover:text-yellow-300 transition-colors">Hướng dẫn Đăng ký</Link>
               <a href="https://d10hub.io.vn" target="_blank" rel="noopener noreferrer" className="hover:text-yellow-300 transition-colors">Tài liệu</a>
             </nav>
             
-            {/* Nút Đăng nhập */}
+            {/* Nút Đăng nhập thông minh */}
             <div className="flex items-center space-x-3">
-              <Link href="/login" className="bg-white text-blue-600 px-5 py-2 rounded-full font-bold hover:bg-gray-100 transition-colors">
-                Đăng nhập
-              </Link>
+              <AuthModal />
             </div>
           </div>
         </header>
