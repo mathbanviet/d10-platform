@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: 'Giới thiệu | Hệ thống trung tâm Điểm 10+',
+  title: 'Giới thiệu | Hệ thống trung tâm Điểm 10⁺',
   description: 'Nền tảng học tập và luyện thi trực tuyến chuyên sâu, chất lượng hàng đầu Việt Nam.',
 };
 
@@ -18,7 +18,7 @@ export default function AboutPage() {
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
               Hệ thống giáo dục <br className="hidden md:block" />
-              <span className="text-yellow-400">Điểm 10+ Online</span>
+              <span className="text-yellow-400">Điểm 10⁺ Online</span>
             </h1>
             <p className="text-blue-100 text-lg md:text-xl mb-8 max-w-2xl leading-relaxed">
               Tiên phong ứng dụng công nghệ vào giáo dục, mang đến giải pháp học tập toàn diện, cá nhân hóa, giúp học sinh chinh phục mọi kỳ thi với kết quả cao nhất.

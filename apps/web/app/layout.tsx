@@ -32,7 +32,7 @@ export default function RootLayout({
             {/* Logo */}
             <div className="flex items-center space-x-4">
               <Link href="/" className="text-2xl font-bold tracking-wider cursor-pointer">
-                <span className="text-yellow-400">ĐIỂM 10+</span> ONLINE
+                <span className="text-yellow-400">ĐIỂM 10⁺</span> ONLINE
               </Link>
             </div>
             
