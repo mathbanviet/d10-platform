@@ -13,6 +13,21 @@ interface GraphPoint {
   label?: string;
 }
 
+interface GraphSegment {
+  from: [number, number];
+  to: [number, number];
+  style?: "solid" | "dashed";
+  vector?: boolean;
+  label?: string;
+}
+
+interface GraphCircle {
+  x: number;
+  y: number;
+  r: number;
+  style?: "solid" | "dashed";
+}
+
 interface GraphConfig {
   expr?: string;
   exprs?: string[];
@@ -21,12 +36,41 @@ interface GraphConfig {
   xRange?: [number, number];
   yRange?: [number, number];
   points?: GraphPoint[];
+  segments?: GraphSegment[];
+  circles?: GraphCircle[];
+}
+
+interface GeoSegment {
+  from: string;
+  to: string;
+  style?: "solid" | "dashed";
+  vector?: boolean;
+  label?: string;
+}
+
+interface GeoCircle {
+  center: string;
+  r: number;
+  ry?: number;
+  style?: "solid" | "dashed";
+}
+
+interface GeoConfig {
+  title?: string;
+  axes?: "none" | "Oxy" | "Oxyz";
+  points: Record<string, number[]>;
+  segments?: GeoSegment[];
+  circles?: GeoCircle[];
+  rightAngles?: [string, string, string][];
 }
 
 declare global {
   interface Window {
     katex?: {
-      renderToString: (tex: string, options?: { displayMode?: boolean; throwOnError?: boolean }) => string;
+      renderToString: (
+        tex: string,
+        options?: { displayMode?: boolean; throwOnError?: boolean }
+      ) => string;
     };
   }
 }
@@ -35,7 +79,7 @@ export default function IChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "ai",
-      text: "Xin chào! Em là Trợ lý AI của Điểm 10+. Thầy/Cô hoặc các em học sinh cần hỗ trợ giải bài tập hay tra cứu kiến thức gì hôm nay?",
+      text: "Xin chào! Em là Trợ lý AI của Điểm 10⁺. Thầy/Cô hoặc các em học sinh cần hỗ trợ giải bài tập hay tra cứu kiến thức gì hôm nay?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -43,13 +87,12 @@ export default function IChatPage() {
   const [katexReady, setKatexReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Tự động nạp bộ hiển thị công thức Toán - Lý - Hóa KaTeX
   useEffect(() => {
     if (!document.getElementById("katex-css")) {
       const link = document.createElement("link");
       link.id = "katex-css";
       link.rel = "stylesheet";
-      link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css";
+      link.href = "[https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css](https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css)";
       document.head.appendChild(link);
     }
 
@@ -66,7 +109,7 @@ export default function IChatPage() {
 
     const script = document.createElement("script");
     script.id = "katex-js";
-    script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js";
+    script.src = "[https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js](https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js)";
     script.async = true;
     script.onload = () => setKatexReady(true);
     document.head.appendChild(script);
@@ -83,6 +126,7 @@ export default function IChatPage() {
   // Hàm tính giá trị biểu thức y = f(x)
   const evalMathExpr = (exprStr: string, xVal: number): number => {
     try {
+      if (!exprStr || !exprStr.trim()) return NaN;
       const normalized = exprStr
         .replace(/\\cdot|\\times/g, "*")
         .replace(/\^/g, "**")
@@ -96,9 +140,9 @@ export default function IChatPage() {
         .replace(/\babs\b/g, "Math.abs")
         .replace(/\bln\b|\blog\b/g, "Math.log")
         .replace(/\bpi\b/gi, "Math.PI")
-        .replace(/\bx\b/gi, `(${xVal})`);
+        .replace(/\bx\b/gi, "(" + String(xVal) + ")");
 
-      const fn = new Function(`return ${normalized};`);
+      const fn = new Function("return " + normalized + ";");
       const res = Number(fn());
       return Number.isFinite(res) ? res : NaN;
     } catch {
@@ -106,66 +150,128 @@ export default function IChatPage() {
     }
   };
 
-  // Bộ vẽ đồ thị hàm số chuẩn sách giáo khoa Việt Nam (Oxy, lưới, đường gióng nét đứt)
+  // 1. BỘ VẼ ĐỒ THỊ HÀM SỐ & TỌA ĐỘ OXY
   const renderFunctionGraph = (jsonStr: string): string => {
     try {
       const config: GraphConfig = JSON.parse(jsonStr.trim());
-      const expressions = config.exprs || (config.expr ? [config.expr] : ["x^2"]);
-      const [xMin, xMax] = config.xRange || [-4, 4];
-      const [yMin, yMax] = config.yRange || [-2, 6];
+      const expressions =
+        config.exprs || (config.expr && config.expr.trim() ? [config.expr] : ["x^2"]);
+      const xRange = config.xRange || [-4, 4];
+      const yRange = config.yRange || [-2, 6];
+      const xMin = xRange[0] ?? -4;
+      const xMax = xRange[1] ?? 4;
+      const yMin = yRange[0] ?? -2;
+      const yMax = yRange[1] ?? 6;
       const points = config.points || [];
+      const segments = config.segments || [];
+      const circles = config.circles || [];
 
       const width = 420;
       const height = 340;
       const pad = 36;
+      const rightBound = width - pad;
+      const bottomBound = height - pad;
       const plotW = width - pad * 2;
       const plotH = height - pad * 2;
 
       const toSvgX = (x: number) => pad + ((x - xMin) / (xMax - xMin)) * plotW;
-      const toSvgY = (y: number) => height - pad - ((y - yMin) / (yMax - yMin)) * plotH;
+      const toSvgY = (y: number) => bottomBound - ((y - yMin) / (yMax - yMin)) * plotH;
 
-      const originX = Math.min(Math.max(toSvgX(0), pad), width - pad);
-      const originY = Math.min(Math.max(toSvgY(0), pad), height - pad);
+      const originX = Math.min(Math.max(toSvgX(0), pad), rightBound);
+      const originY = Math.min(Math.max(toSvgY(0), pad), bottomBound);
 
-      let svgContent = "";
+      const svgParts: string[] = [];
+      svgParts.push(
+        '<defs><marker id="arrow-oxy" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" /></marker></defs>'
+      );
 
-      // 1. Vẽ lưới tọa độ và số chia vạch
+      // Vẽ lưới tọa độ và số chia vạch
       for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
         const sx = toSvgX(x);
-        svgContent += `<line x1="${sx}" y1="${pad}" x2="${sx}" y2="${height - pad}" stroke="#e5e7eb" stroke-width="1" />`;
+        svgParts.push(
+          '<line x1="' + sx + '" y1="' + pad + '" x2="' + sx + '" y2="' + bottomBound + '" stroke="#e5e7eb" stroke-width="1" />'
+        );
         if (x !== 0) {
-          svgContent += `<line x1="${sx}" y1="${originY - 3}" x2="${sx}" y2="${originY + 3}" stroke="#374151" stroke-width="1.2" />`;
-          svgContent += `<text x="${sx}" y="${originY + 15}" font-size="11" fill="#4b5563" text-anchor="middle">${x}</text>`;
+          svgParts.push(
+            '<line x1="' + sx + '" y1="' + (originY - 3) + '" x2="' + sx + '" y2="' + (originY + 3) + '" stroke="#374151" stroke-width="1.2" />'
+          );
+          svgParts.push(
+            '<text x="' + sx + '" y="' + (originY + 15) + '" font-size="11" fill="#4b5563" text-anchor="middle">' + x + '</text>'
+          );
         }
       }
 
       for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
         const sy = toSvgY(y);
-        svgContent += `<line x1="${pad}" y1="${sy}" x2="${width - pad}" y2="${sy}" stroke="#e5e7eb" stroke-width="1" />`;
+        svgParts.push(
+          '<line x1="' + pad + '" y1="' + sy + '" x2="' + rightBound + '" y2="' + sy + '" stroke="#e5e7eb" stroke-width="1" />'
+        );
         if (y !== 0) {
-          svgContent += `<line x1="${originX - 3}" y1="${sy}" x2="${originX + 3}" y2="${sy}" stroke="#374151" stroke-width="1.2" />`;
-          svgContent += `<text x="${originX - 8}" y="${sy + 4}" font-size="11" fill="#4b5563" text-anchor="end">${y}</text>`;
+          svgParts.push(
+            '<line x1="' + (originX - 3) + '" y1="' + sy + '" x2="' + (originX + 3) + '" y2="' + sy + '" stroke="#374151" stroke-width="1.2" />'
+          );
+          svgParts.push(
+            '<text x="' + (originX - 8) + '" y="' + (sy + 4) + '" font-size="11" fill="#4b5563" text-anchor="end">' + y + '</text>'
+          );
         }
       }
 
-      // 2. Vẽ trục Ox, Oy và gốc tọa độ O
-      svgContent += `
-        <line x1="${pad - 10}" y1="${originY}" x2="${width - pad + 12}" y2="${originY}" stroke="#111827" stroke-width="1.6" />
-        <polygon points="${width - pad + 16},${originY} ${width - pad + 8},${originY - 4} ${width - pad + 8},${originY + 4}" fill="#111827" />
-        <text x="${width - pad + 14}" y="${originY - 8}" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>
+      // Vẽ trục Ox, Oy và gốc O
+      svgParts.push(
+        '<line x1="' + (pad - 10) + '" y1="' + originY + '" x2="' + (rightBound + 12) + '" y2="' + originY + '" stroke="#111827" stroke-width="1.6" />'
+      );
+      svgParts.push(
+        '<polygon points="' + (rightBound + 16) + ',' + originY + ' ' + (rightBound + 8) + ',' + (originY - 4) + ' ' + (rightBound + 8) + ',' + (originY + 4) + '" fill="#111827" />'
+      );
+      svgParts.push(
+        '<text x="' + (rightBound + 14) + '" y="' + (originY - 8) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
+      );
 
-        <line x1="${originX}" y1="${height - pad + 10}" x2="${originX}" y2="${pad - 12}" stroke="#111827" stroke-width="1.6" />
-        <polygon points="${originX},${pad - 16} ${originX - 4},${pad - 8} ${originX + 4},${pad - 8}" fill="#111827" />
-        <text x="${originX + 10}" y="${pad - 6}" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>
+      svgParts.push(
+        '<line x1="' + originX + '" y1="' + (bottomBound + 10) + '" x2="' + originX + '" y2="' + (pad - 12) + '" stroke="#111827" stroke-width="1.6" />'
+      );
+      svgParts.push(
+        '<polygon points="' + originX + ',' + (pad - 16) + ' ' + (originX - 4) + ',' + (pad - 8) + ' ' + (originX + 4) + ',' + (pad - 8) + '" fill="#111827" />'
+      );
+      svgParts.push(
+        '<text x="' + (originX + 10) + '" y="' + (pad - 6) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
+      );
+      svgParts.push(
+        '<text x="' + (originX - 10) + '" y="' + (originY + 15) + '" font-size="12" font-style="italic" font-weight="bold" fill="#111827">O</text>'
+      );
 
-        <text x="${originX - 10}" y="${originY + 15}" font-size="12" font-style="italic" font-weight="bold" fill="#111827">O</text>
-      `;
+      // Vẽ đường tròn trên Oxy
+      circles.forEach((c) => {
+        const cx = toSvgX(c.x);
+        const cy = toSvgY(c.y);
+        const rx = Math.abs(toSvgX(c.x + c.r) - cx);
+        const ry = Math.abs(toSvgY(c.y + c.r) - cy);
+        const dash = c.style === "dashed" ? ' stroke-dasharray="5 4"' : "";
+        svgParts.push(
+          '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="#2563eb" stroke-width="2"' + dash + " />"
+        );
+      });
 
-      // 3. Vẽ đường cong đồ thị hàm số
+      // Vẽ đoạn thẳng / vectơ trên Oxy
+      segments.forEach((seg) => {
+        const x1 = toSvgX(seg.from[0] ?? 0);
+        const y1 = toSvgY(seg.from[1] ?? 0);
+        const x2 = toSvgX(seg.to[0] ?? 0);
+        const y2 = toSvgY(seg.to[1] ?? 0);
+        const dash = seg.style === "dashed" ? ' stroke-dasharray="5 4"' : "";
+        const marker = seg.vector ? ' marker-end="url(#arrow-oxy)"' : "";
+        svgParts.push(
+          '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#2563eb" stroke-width="2"' + dash + marker + " />"
+        );
+      });
+
+      // Vẽ đường cong hàm số
       const colors = ["#2563eb", "#16a34a", "#dc2626"];
       const steps = 300;
+      const ySpan = yMax - yMin;
+
       expressions.forEach((expr, idx) => {
-        const color = colors[idx % colors.length];
+        const color = colors[idx % colors.length] ?? "#2563eb";
         let pathD = "";
         let drawing = false;
         let prevY = NaN;
@@ -176,15 +282,15 @@ export default function IChatPage() {
 
           if (
             Number.isFinite(y) &&
-            y >= yMin - (yMax - yMin) * 0.15 &&
-            y <= yMax + (yMax - yMin) * 0.15
+            y >= yMin - ySpan * 0.15 &&
+            y <= yMax + ySpan * 0.15
           ) {
             const sx = toSvgX(x).toFixed(2);
             const sy = toSvgY(y).toFixed(2);
-            if (drawing && Number.isFinite(prevY) && Math.abs(y - prevY) > (yMax - yMin) * 0.8) {
+            if (drawing && Number.isFinite(prevY) && Math.abs(y - prevY) > ySpan * 0.8) {
               drawing = false;
             }
-            pathD += drawing ? ` L ${sx} ${sy}` : `M ${sx} ${sy}`;
+            pathD += drawing ? " L " + sx + " " + sy : "M " + sx + " " + sy;
             drawing = true;
           } else {
             drawing = false;
@@ -193,42 +299,303 @@ export default function IChatPage() {
         }
 
         if (pathD) {
-          svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" />`;
+          svgParts.push(
+            '<path d="' + pathD + '" fill="none" stroke="' + color + '" stroke-width="2.4" stroke-linecap="round" />'
+          );
         }
       });
 
-      // 4. Vẽ đường gióng nét đứt và đánh dấu các điểm đặc biệt
+      // Vẽ đường gióng nét đứt và các điểm đặc biệt
       points.forEach((pt) => {
         if (pt.x >= xMin && pt.x <= xMax && pt.y >= yMin && pt.y <= yMax) {
           const px = toSvgX(pt.x);
           const py = toSvgY(pt.y);
 
           if (pt.x !== 0 && pt.y !== 0) {
-            svgContent += `
-              <line x1="${px}" y1="${py}" x2="${px}" y2="${originY}" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />
-              <line x1="${px}" y1="${py}" x2="${originX}" y2="${py}" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />
-            `;
+            svgParts.push(
+              '<line x1="' + px + '" y1="' + py + '" x2="' + px + '" y2="' + originY + '" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />'
+            );
+            svgParts.push(
+              '<line x1="' + px + '" y1="' + py + '" x2="' + originX + '" y2="' + py + '" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />'
+            );
           }
-          svgContent += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />`;
+          svgParts.push(
+            '<circle cx="' + px + '" cy="' + py + '" r="4" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />'
+          );
+          if (pt.label) {
+            svgParts.push(
+              '<text x="' + (px + 6) + '" y="' + (py - 6) + '" font-size="12" font-weight="bold" fill="#1e3a8a">' + pt.label + "</text>"
+            );
+          }
         }
       });
 
-      const titleLabel = config.label || `Đồ thị hàm số y = ${expressions[0]}`;
+      const firstExpr = expressions[0] ?? "";
+      const titleLabel =
+        config.label || (firstExpr ? "Đồ thị hàm số y = " + firstExpr : "Hệ trục tọa độ Oxy");
 
-      return `
-        <div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex flex-col items-center">
-          <div class="text-xs font-bold text-blue-800 mb-1">${titleLabel}</div>
-          <svg viewBox="0 0 ${width} ${height}" class="w-full max-w-[420px] h-auto select-none">
-            ${svgContent}
-          </svg>
-        </div>
-      `;
+      return (
+        '<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex flex-col items-center">' +
+        '<div class="text-xs font-bold text-blue-800 mb-1">' +
+        titleLabel +
+        "</div>" +
+        '<svg viewBox="0 0 ' +
+        width +
+        " " +
+        height +
+        '" class="w-full max-w-[420px] h-auto select-none">' +
+        svgParts.join("") +
+        "</svg></div>"
+      );
     } catch {
       return "";
     }
   };
 
-  // Hàm định dạng văn bản, kẻ bảng giá trị, hiển thị LaTeX (\dfrac) và vẽ đồ thị
+  // 2. BỘ VẼ HÌNH HỌC PHẲNG, HÌNH KHÔNG GIAN 3D & HỆ TRỤC OXYZ
+  const renderGeometryBlock = (jsonStr: string): string => {
+    try {
+      const config: GeoConfig = JSON.parse(jsonStr.trim());
+      if (!config.points || Object.keys(config.points).length === 0) return "";
+
+      const project = (coords: number[]): { x: number; y: number } => {
+        if (coords.length >= 3) {
+          const x = Number(coords[0]) || 0;
+          const y = Number(coords[1]) || 0;
+          const z = Number(coords[2]) || 0;
+          return {
+            x: y - x * 0.45,
+            y: z - x * 0.35,
+          };
+        }
+        return {
+          x: Number(coords[0]) || 0,
+          y: Number(coords[1]) || 0,
+        };
+      };
+
+      const projectedPoints: Record<string, { x: number; y: number }> = {};
+      Object.entries(config.points).forEach(([name, coords]) => {
+        if (Array.isArray(coords)) {
+          projectedPoints[name] = project(coords);
+        }
+      });
+
+      const ptValues = Object.values(projectedPoints);
+      if (ptValues.length === 0) return "";
+
+      let minX = Math.min(...ptValues.map((p) => p.x));
+      let maxX = Math.max(...ptValues.map((p) => p.x));
+      let minY = Math.min(...ptValues.map((p) => p.y));
+      let maxY = Math.max(...ptValues.map((p) => p.y));
+
+      (config.circles || []).forEach((c) => {
+        const center = projectedPoints[c.center];
+        if (center) {
+          const rx = c.r || 1;
+          const ry = c.ry || c.r || 1;
+          minX = Math.min(minX, center.x - rx);
+          maxX = Math.max(maxX, center.x + rx);
+          minY = Math.min(minY, center.y - ry);
+          maxY = Math.max(maxY, center.y + ry);
+        }
+      });
+
+      const width = 420;
+      const height = 320;
+      const pad = 48;
+      const plotW = width - pad * 2;
+      const plotH = height - pad * 2;
+
+      const spanX = Math.max(maxX - minX, 1);
+      const spanY = Math.max(maxY - minY, 1);
+      const scale = Math.min(plotW / spanX, plotH / spanY);
+      const midX = (minX + maxX) / 2;
+      const midY = (minY + maxY) / 2;
+
+      const toSvgX = (x: number) => width / 2 + (x - midX) * scale;
+      const toSvgY = (y: number) => height / 2 - (y - midY) * scale;
+
+      const svgParts: string[] = [];
+      svgParts.push(
+        '<defs><marker id="geo-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#1d4ed8" /></marker><marker id="axis-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#374151" /></marker></defs>'
+      );
+
+      if (config.axes === "Oxyz") {
+        const o = project([0, 0, 0]);
+        const axX = project([4.5, 0, 0]);
+        const axY = project([0, 4.5, 0]);
+        const axZ = project([0, 0, 4.5]);
+        svgParts.push(
+          '<line x1="' + toSvgX(o.x) + '" y1="' + toSvgY(o.y) + '" x2="' + toSvgX(axX.x) + '" y2="' + toSvgY(axX.y) + '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
+        );
+        svgParts.push(
+          '<text x="' + (toSvgX(axX.x) - 10) + '" y="' + (toSvgY(axX.y) + 14) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
+        );
+        svgParts.push(
+          '<line x1="' + toSvgX(o.x) + '" y1="' + toSvgY(o.y) + '" x2="' + toSvgX(axY.x) + '" y2="' + toSvgY(axY.y) + '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
+        );
+        svgParts.push(
+          '<text x="' + (toSvgX(axY.x) + 8) + '" y="' + (toSvgY(axY.y) + 4) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
+        );
+        svgParts.push(
+          '<line x1="' + toSvgX(o.x) + '" y1="' + toSvgY(o.y) + '" x2="' + toSvgX(axZ.x) + '" y2="' + toSvgY(axZ.y) + '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
+        );
+        svgParts.push(
+          '<text x="' + (toSvgX(axZ.x) + 8) + '" y="' + (toSvgY(axZ.y) + 4) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">z</text>'
+        );
+      }
+
+      // Ký hiệu góc vuông
+      (config.rightAngles || []).forEach((ra) => {
+        if (ra.length === 3) {
+          const p1 = projectedPoints[ra[0] ?? ""];
+          const pv = projectedPoints[ra[1] ?? ""];
+          const p2 = projectedPoints[ra[2] ?? ""];
+          if (p1 && pv && p2) {
+            const vx = toSvgX(pv.x);
+            const vy = toSvgY(pv.y);
+            const dx1 = toSvgX(p1.x) - vx;
+            const dy1 = toSvgY(p1.y) - vy;
+            const len1 = Math.hypot(dx1, dy1) || 1;
+            const dx2 = toSvgX(p2.x) - vx;
+            const dy2 = toSvgY(p2.y) - vy;
+            const len2 = Math.hypot(dx2, dy2) || 1;
+
+            const size = 10;
+            const u1x = (dx1 / len1) * size;
+            const u1y = (dy1 / len1) * size;
+            const u2x = (dx2 / len2) * size;
+            const u2y = (dy2 / len2) * size;
+
+            svgParts.push(
+              '<polyline points="' +
+                (vx + u1x) +
+                "," +
+                (vy + u1y) +
+                " " +
+                (vx + u1x + u2x) +
+                "," +
+                (vy + u1y + u2y) +
+                " " +
+                (vx + u2x) +
+                "," +
+                (vy + u2y) +
+                '" fill="none" stroke="#dc2626" stroke-width="1.3" />'
+            );
+          }
+        }
+      });
+
+      // Vẽ đường tròn hoặc elip
+      (config.circles || []).forEach((c) => {
+        const center = projectedPoints[c.center];
+        if (center) {
+          const cx = toSvgX(center.x);
+          const cy = toSvgY(center.y);
+          const rx = (c.r || 1) * scale;
+          const ry = (c.ry || c.r || 1) * scale;
+          const dash = c.style === "dashed" ? ' stroke-dasharray="6 4"' : "";
+          svgParts.push(
+            '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="#1e40af" stroke-width="1.8"' + dash + " />"
+          );
+        }
+      });
+
+      // Vẽ các cạnh nét liền / nét đứt
+      (config.segments || []).forEach((seg) => {
+        const pFrom = projectedPoints[seg.from];
+        const pTo = projectedPoints[seg.to];
+        if (pFrom && pTo) {
+          const x1 = toSvgX(pFrom.x);
+          const y1 = toSvgY(pFrom.y);
+          const x2 = toSvgX(pTo.x);
+          const y2 = toSvgY(pTo.y);
+          const isDashed = seg.style === "dashed";
+          const dashAttr = isDashed ? ' stroke-dasharray="6 4"' : "";
+          const color = isDashed ? "#4b5563" : "#1e3a8a";
+          const widthLine = isDashed ? "1.6" : "2.1";
+          const marker = seg.vector ? ' marker-end="url(#geo-arrow)"' : "";
+
+          svgParts.push(
+            '<line x1="' +
+              x1 +
+              '" y1="' +
+              y1 +
+              '" x2="' +
+              x2 +
+              '" y2="' +
+              y2 +
+              '" stroke="' +
+              color +
+              '" stroke-width="' +
+              widthLine +
+              '" stroke-linecap="round"' +
+              dashAttr +
+              marker +
+              " />"
+          );
+
+          if (seg.label) {
+            const mx = (x1 + x2) / 2;
+            const my = (y1 + y2) / 2 - 6;
+            svgParts.push(
+              '<text x="' + mx + '" y="' + my + '" font-size="11" fill="#be123c" font-weight="bold" text-anchor="middle">' + seg.label + "</text>"
+            );
+          }
+        }
+      });
+
+      // Vẽ các đỉnh và nhãn tên đỉnh
+      const centerSvgX =
+        ptValues.reduce((acc, p) => acc + toSvgX(p.x), 0) / ptValues.length;
+      const centerSvgY =
+        ptValues.reduce((acc, p) => acc + toSvgY(p.y), 0) / ptValues.length;
+
+      Object.entries(projectedPoints).forEach(([name, pt]) => {
+        const sx = toSvgX(pt.x);
+        const sy = toSvgY(pt.y);
+        const vx = sx - centerSvgX;
+        const vy = sy - centerSvgY;
+        const dist = Math.hypot(vx, vy) || 1;
+        const offsetX = (vx / dist) * 16;
+        const offsetY = (vy / dist) * 16;
+
+        svgParts.push(
+          '<circle cx="' + sx + '" cy="' + sy + '" r="3.2" fill="#1e3a8a" />'
+        );
+        svgParts.push(
+          '<text x="' +
+            (sx + offsetX) +
+            '" y="' +
+            (sy + offsetY + 4) +
+            '" font-size="13" font-family="serif" font-style="italic" font-weight="bold" fill="#111827" text-anchor="middle">' +
+            name +
+            "</text>"
+        );
+      });
+
+      const titleLabel = config.title || "Hình minh họa";
+
+      return (
+        '<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex flex-col items-center">' +
+        '<div class="text-xs font-bold text-blue-800 mb-1">' +
+        titleLabel +
+        "</div>" +
+        '<svg viewBox="0 0 ' +
+        width +
+        " " +
+        height +
+        '" class="w-full max-w-[420px] h-auto select-none">' +
+        svgParts.join("") +
+        "</svg></div>"
+      );
+    } catch {
+      return "";
+    }
+  };
+
+  // Hàm định dạng văn bản, kẻ bảng, hiển thị LaTeX (\dfrac) và vẽ đồ thị/hình học
   const formatAIMessage = (rawText: string) => {
     const escapeHtml = (str: string) =>
       str
@@ -237,7 +604,6 @@ export default function IChatPage() {
         .replace(/>/g, "&gt;");
 
     const renderMath = (tex: string, displayMode: boolean) => {
-      // Tự động ép mọi phân số \frac sang \dfrac (kích thước lớn) và hiển thị rõ \lim, \sum, \int
       const cleanTex = tex
         .trim()
         .replace(/\\frac\b/g, "\\dfrac")
@@ -274,49 +640,62 @@ export default function IChatPage() {
         .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)");
 
       return displayMode
-        ? `<div class="my-2 py-1.5 px-3 bg-blue-50/70 rounded-lg font-semibold text-blue-950 text-center">${fallback}</div>`
-        : `<span class="font-semibold text-blue-900">${fallback}</span>`;
+        ? '<div class="my-2 py-1.5 px-3 bg-blue-50/70 rounded-lg font-semibold text-blue-950 text-center">' + fallback + "</div>"
+        : '<span class="font-semibold text-blue-900">' + fallback + "</span>";
     };
 
-    // 1. Lưu trữ tạm các khối Đồ thị, Hình SVG và Công thức Toán
     const specialBlocks: string[] = [];
     const saveBlock = (html: string) => {
-      const id = `@@BLOCK_${specialBlocks.length}@@`;
+      const id = "@@BLOCK_" + String(specialBlocks.length) + "@@";
       specialBlocks.push(html);
       return id;
     };
 
-    // Tách khối vẽ đồ thị ```graph ... ```
-    let processed = rawText.replace(/```graph\s*([\s\S]*?)```/gi, (_, json) => {
-      const graphHtml = renderFunctionGraph(json);
-      return graphHtml ? `\n${saveBlock(graphHtml)}\n` : "";
+    // 1. Tách khối vẽ đồ thị (dùng \x60 thay cho dấu backtick để tránh lỗi parser)
+    let processed = rawText.replace(/\x60\x60\x60graph\s*([\s\S]*?)\x60\x60\x60/gi, (_, json) => {
+      const graphHtml = renderFunctionGraph(String(json));
+      return graphHtml ? "\n" + saveBlock(graphHtml) + "\n" : "";
     });
 
-    // Tách khối hình học ```svg ... ```
-    processed = processed.replace(/```svg\s*([\s\S]*?)```/gi, (_, svgCode) => {
-      const cleanSvg = svgCode.trim().replace(/\r?\n/g, " ");
-      return `\n${saveBlock(`<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex justify-center overflow-x-auto">${cleanSvg}</div>`)}\n`;
+    // 2. Tách khối vẽ hình học 2D/3D
+    processed = processed.replace(/\x60\x60\x60geo\s*([\s\S]*?)\x60\x60\x60/gi, (_, json) => {
+      const geoHtml = renderGeometryBlock(String(json));
+      return geoHtml ? "\n" + saveBlock(geoHtml) + "\n" : "";
     });
 
-    // Tách công thức lớn $$...$$ và \[...\]
+    // 3. Tách khối hình SVG
+    processed = processed.replace(/\x60\x60\x60svg\s*([\s\S]*?)\x60\x60\x60/gi, (_, svgCode) => {
+      const cleanSvg = String(svgCode).trim().replace(/\r?\n/g, " ");
+      return (
+        "\n" +
+        saveBlock(
+          '<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex justify-center overflow-x-auto">' +
+            cleanSvg +
+            "</div>"
+        ) +
+        "\n"
+      );
+    });
+
+    // 4. Tách công thức lớn $$...$$ và \[...\]
     processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-      return `\n${saveBlock(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
+      return "\n" + saveBlock('<div class="my-2 overflow-x-auto">' + renderMath(String(tex), true) + "</div>") + "\n";
     });
 
     processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, tex) => {
-      return `\n${saveBlock(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
+      return "\n" + saveBlock('<div class="my-2 overflow-x-auto">' + renderMath(String(tex), true) + "</div>") + "\n";
     });
 
     // Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
-    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveBlock(renderMath(tex, false)));
-    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveBlock(renderMath(tex, false)));
+    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveBlock(renderMath(String(tex), false)));
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveBlock(renderMath(String(tex), false)));
 
-    // 2. Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
+    // Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
     processed = processed
       .replace(/\s+---\s+/g, "\n---\n")
       .replace(/\s+(#{2,4}\s+)/g, "\n$1");
 
-    // 3. Làm sạch HTML và định dạng chữ
+    // Làm sạch HTML, định dạng chữ và đưa dấu + của 10+ lên làm số mũ
     processed = escapeHtml(processed)
       .replace(/^---$/gm, '<hr class="my-3 border-gray-200" />')
       .replace(/^###\s+(.+)$/gm, '<div class="font-bold text-blue-800 text-base mt-3 mb-1">$1</div>')
@@ -324,9 +703,10 @@ export default function IChatPage() {
       .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>')
       .replace(/^\s*[\*\-]\s+/gm, "• ")
       .replace(/\*([^*\n]+)\*/g, '<em class="italic text-gray-700">$1</em>')
-      .replace(/`([^`\n]+)`/g, '<code class="bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>');
+      .replace(/\x60([^\x60\n]+)\x60/g, '<code class="bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
+      .replace(/10\+/g, '10<sup class="font-bold">+</sup>');
 
-    // 4. Tách dòng và tự động gom các dòng có dấu |...| thành Bảng kẻ ô (Table)
+    // Tách dòng và tự động gom các dòng có dấu |...| thành Bảng kẻ ô (Table)
     const rawLines = processed
       .split(/\n+/)
       .map((line) => line.trim())
@@ -336,14 +716,14 @@ export default function IChatPage() {
     let idx = 0;
 
     while (idx < rawLines.length) {
-      if (/^\|.*\|$/.test(rawLines[idx])) {
+      const currentLine = rawLines[idx] ?? "";
+      if (/^\|.*\|$/.test(currentLine)) {
         const tableLines: string[] = [];
-        while (idx < rawLines.length && /^\|.*\|$/.test(rawLines[idx])) {
-          tableLines.push(rawLines[idx]);
+        while (idx < rawLines.length && /^\|.*\|$/.test(rawLines[idx] ?? "")) {
+          tableLines.push(rawLines[idx] ?? "");
           idx++;
         }
 
-        // Lọc bỏ dòng phân cách | :---: | :---: |
         const validRows = tableLines.filter((row) => {
           const cells = row.slice(1, -1).split("|").map((c) => c.trim());
           return !cells.every((c) => /^[:\-\s]+$/.test(c));
@@ -359,24 +739,26 @@ export default function IChatPage() {
                   const cellStyle = isHeaderCell
                     ? "bg-blue-50/80 font-semibold text-blue-950"
                     : "bg-white text-gray-800";
-                  return `<td class="border border-blue-200 px-3.5 py-2 text-center ${cellStyle}">${cell}</td>`;
+                  return '<td class="border border-blue-200 px-3.5 py-2 text-center ' + cellStyle + '">' + cell + "</td>";
                 })
                 .join("");
-              return `<tr>${cellsHtml}</tr>`;
+              return "<tr>" + cellsHtml + "</tr>";
             })
             .join("");
 
           groupedBlocks.push(
-            `<div class="my-2.5 overflow-x-auto"><table class="border-collapse border border-blue-200 text-sm md:text-base">${rowsHtml}</table></div>`
+            '<div class="my-2.5 overflow-x-auto"><table class="border-collapse border border-blue-200 text-sm md:text-base">' +
+              rowsHtml +
+              "</table></div>"
           );
         }
       } else {
-        groupedBlocks.push(rawLines[idx]);
+        groupedBlocks.push(currentLine);
         idx++;
       }
     }
 
-    // 5. Khôi phục khối Đồ thị, SVG và Công thức Toán vào từng dòng/bảng
+    // Khôi phục khối Đồ thị, Hình học 2D/3D và Công thức Toán vào từng dòng/bảng
     return groupedBlocks.map((block, i) => {
       const restoredBlock = block.replace(/@@BLOCK_(\d+)@@/g, (_, bIdx) => specialBlocks[Number(bIdx)] || "");
       return (
@@ -413,7 +795,7 @@ export default function IChatPage() {
           { sender: "ai", text: "Hệ thống đang bận, vui lòng thử lại sau giây lát!" },
         ]);
       }
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         { sender: "ai", text: "Có lỗi xảy ra khi kết nối với AI." },
@@ -431,7 +813,7 @@ export default function IChatPage() {
         <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-4 text-white rounded-t-2xl flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-400 text-blue-900 rounded-full flex items-center justify-center font-black text-xl shadow-md">
-              10+
+              10<sup className="text-xs -top-2">+</sup>
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">iChat - Trợ lý Hỏi đáp AI</h1>
@@ -448,14 +830,15 @@ export default function IChatPage() {
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+              className={"flex " + (msg.sender === "user" ? "justify-end" : "justify-start")}
             >
               <div
-                className={`max-w-[80%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed ${
-                  msg.sender === "user"
+                className={
+                  "max-w-[80%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed " +
+                  (msg.sender === "user"
                     ? "bg-blue-600 text-white rounded-br-none whitespace-pre-wrap"
-                    : "bg-white text-gray-800 border border-gray-100 rounded-bl-none space-y-2"
-                }`}
+                    : "bg-white text-gray-800 border border-gray-100 rounded-bl-none space-y-2")
+                }
               >
                 {msg.sender === "user" ? msg.text : formatAIMessage(msg.text)}
               </div>
