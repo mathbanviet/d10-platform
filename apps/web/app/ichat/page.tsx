@@ -7,6 +7,22 @@ interface Message {
   text: string;
 }
 
+interface GraphPoint {
+  x: number;
+  y: number;
+  label?: string;
+}
+
+interface GraphConfig {
+  expr?: string;
+  exprs?: string[];
+  label?: string;
+  labels?: string[];
+  xRange?: [number, number];
+  yRange?: [number, number];
+  points?: GraphPoint[];
+}
+
 declare global {
   interface Window {
     katex?: {
@@ -64,7 +80,155 @@ export default function IChatPage() {
     scrollToBottom();
   }, [messages, loading]);
 
-  // Hàm định dạng văn bản, chia đoạn và hiển thị công thức Toán/Hóa LaTeX
+  // Hàm tính giá trị biểu thức y = f(x)
+  const evalMathExpr = (exprStr: string, xVal: number): number => {
+    try {
+      const normalized = exprStr
+        .replace(/\\cdot|\\times/g, "*")
+        .replace(/\^/g, "**")
+        .replace(/(\d)([xX(])/g, "$1*$2")
+        .replace(/([xX)])(\d)/g, "$1*$2")
+        .replace(/\)\(/g, ")*(")
+        .replace(/\bsin\b/g, "Math.sin")
+        .replace(/\bcos\b/g, "Math.cos")
+        .replace(/\btan\b/g, "Math.tan")
+        .replace(/\bsqrt\b/g, "Math.sqrt")
+        .replace(/\babs\b/g, "Math.abs")
+        .replace(/\bln\b|\blog\b/g, "Math.log")
+        .replace(/\bpi\b/gi, "Math.PI")
+        .replace(/\bx\b/gi, `(${xVal})`);
+
+      const fn = new Function(`return ${normalized};`);
+      const res = Number(fn());
+      return Number.isFinite(res) ? res : NaN;
+    } catch {
+      return NaN;
+    }
+  };
+
+  // Bộ vẽ đồ thị hàm số chuẩn sách giáo khoa Việt Nam (Oxy, lưới, đường gióng nét đứt)
+  const renderFunctionGraph = (jsonStr: string): string => {
+    try {
+      const config: GraphConfig = JSON.parse(jsonStr.trim());
+      const expressions = config.exprs || (config.expr ? [config.expr] : ["x^2"]);
+      const [xMin, xMax] = config.xRange || [-4, 4];
+      const [yMin, yMax] = config.yRange || [-2, 6];
+      const points = config.points || [];
+
+      const width = 420;
+      const height = 340;
+      const pad = 36;
+      const plotW = width - pad * 2;
+      const plotH = height - pad * 2;
+
+      const toSvgX = (x: number) => pad + ((x - xMin) / (xMax - xMin)) * plotW;
+      const toSvgY = (y: number) => height - pad - ((y - yMin) / (yMax - yMin)) * plotH;
+
+      const originX = Math.min(Math.max(toSvgX(0), pad), width - pad);
+      const originY = Math.min(Math.max(toSvgY(0), pad), height - pad);
+
+      let svgContent = "";
+
+      // 1. Vẽ lưới tọa độ và số chia vạch
+      for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+        const sx = toSvgX(x);
+        svgContent += `<line x1="${sx}" y1="${pad}" x2="${sx}" y2="${height - pad}" stroke="#e5e7eb" stroke-width="1" />`;
+        if (x !== 0) {
+          svgContent += `<line x1="${sx}" y1="${originY - 3}" x2="${sx}" y2="${originY + 3}" stroke="#374151" stroke-width="1.2" />`;
+          svgContent += `<text x="${sx}" y="${originY + 15}" font-size="11" fill="#4b5563" text-anchor="middle">${x}</text>`;
+        }
+      }
+
+      for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+        const sy = toSvgY(y);
+        svgContent += `<line x1="${pad}" y1="${sy}" x2="${width - pad}" y2="${sy}" stroke="#e5e7eb" stroke-width="1" />`;
+        if (y !== 0) {
+          svgContent += `<line x1="${originX - 3}" y1="${sy}" x2="${originX + 3}" y2="${sy}" stroke="#374151" stroke-width="1.2" />`;
+          svgContent += `<text x="${originX - 8}" y="${sy + 4}" font-size="11" fill="#4b5563" text-anchor="end">${y}</text>`;
+        }
+      }
+
+      // 2. Vẽ trục Ox, Oy và gốc tọa độ O
+      svgContent += `
+        <line x1="${pad - 10}" y1="${originY}" x2="${width - pad + 12}" y2="${originY}" stroke="#111827" stroke-width="1.6" />
+        <polygon points="${width - pad + 16},${originY} ${width - pad + 8},${originY - 4} ${width - pad + 8},${originY + 4}" fill="#111827" />
+        <text x="${width - pad + 14}" y="${originY - 8}" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>
+
+        <line x1="${originX}" y1="${height - pad + 10}" x2="${originX}" y2="${pad - 12}" stroke="#111827" stroke-width="1.6" />
+        <polygon points="${originX},${pad - 16} ${originX - 4},${pad - 8} ${originX + 4},${pad - 8}" fill="#111827" />
+        <text x="${originX + 10}" y="${pad - 6}" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>
+
+        <text x="${originX - 10}" y="${originY + 15}" font-size="12" font-style="italic" font-weight="bold" fill="#111827">O</text>
+      `;
+
+      // 3. Vẽ đường cong đồ thị hàm số
+      const colors = ["#2563eb", "#16a34a", "#dc2626"];
+      const steps = 300;
+      expressions.forEach((expr, idx) => {
+        const color = colors[idx % colors.length];
+        let pathD = "";
+        let drawing = false;
+        let prevY = NaN;
+
+        for (let i = 0; i <= steps; i++) {
+          const x = xMin + (i / steps) * (xMax - xMin);
+          const y = evalMathExpr(expr, x);
+
+          if (
+            Number.isFinite(y) &&
+            y >= yMin - (yMax - yMin) * 0.15 &&
+            y <= yMax + (yMax - yMin) * 0.15
+          ) {
+            const sx = toSvgX(x).toFixed(2);
+            const sy = toSvgY(y).toFixed(2);
+            if (drawing && Number.isFinite(prevY) && Math.abs(y - prevY) > (yMax - yMin) * 0.8) {
+              drawing = false;
+            }
+            pathD += drawing ? ` L ${sx} ${sy}` : `M ${sx} ${sy}`;
+            drawing = true;
+          } else {
+            drawing = false;
+          }
+          prevY = y;
+        }
+
+        if (pathD) {
+          svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" />`;
+        }
+      });
+
+      // 4. Vẽ đường gióng nét đứt và đánh dấu các điểm đặc biệt
+      points.forEach((pt) => {
+        if (pt.x >= xMin && pt.x <= xMax && pt.y >= yMin && pt.y <= yMax) {
+          const px = toSvgX(pt.x);
+          const py = toSvgY(pt.y);
+
+          if (pt.x !== 0 && pt.y !== 0) {
+            svgContent += `
+              <line x1="${px}" y1="${py}" x2="${px}" y2="${originY}" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />
+              <line x1="${px}" y1="${py}" x2="${originX}" y2="${py}" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />
+            `;
+          }
+          svgContent += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />`;
+        }
+      });
+
+      const titleLabel = config.label || `Đồ thị hàm số y = ${expressions[0]}`;
+
+      return `
+        <div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex flex-col items-center">
+          <div class="text-xs font-bold text-blue-800 mb-1">${titleLabel}</div>
+          <svg viewBox="0 0 ${width} ${height}" class="w-full max-w-[420px] h-auto select-none">
+            ${svgContent}
+          </svg>
+        </div>
+      `;
+    } catch {
+      return "";
+    }
+  };
+
+  // Hàm định dạng văn bản, kẻ bảng giá trị, hiển thị LaTeX (\dfrac) và vẽ đồ thị
   const formatAIMessage = (rawText: string) => {
     const escapeHtml = (str: string) =>
       str
@@ -73,10 +237,16 @@ export default function IChatPage() {
         .replace(/>/g, "&gt;");
 
     const renderMath = (tex: string, displayMode: boolean) => {
-      const cleanTex = tex.trim();
+      // Tự động ép mọi phân số \frac sang \dfrac (kích thước lớn) và hiển thị rõ \lim, \sum, \int
+      const cleanTex = tex
+        .trim()
+        .replace(/\\frac\b/g, "\\dfrac")
+        .replace(/\\lim\b/g, "\\displaystyle\\lim")
+        .replace(/\\sum\b/g, "\\displaystyle\\sum")
+        .replace(/\\int\b/g, "\\displaystyle\\int");
+
       if (katexReady && window.katex) {
         try {
-          // Xóa các ký tự xuống dòng bên trong thẻ SVG của KaTeX để không bị cắt đứt mũi tên/căn thức
           return window.katex
             .renderToString(cleanTex, {
               displayMode,
@@ -100,7 +270,7 @@ export default function IChatPage() {
         .replace(/\\Rightarrow/g, " ⇒ ")
         .replace(/\\Leftrightarrow/g, " ⇔ ")
         .replace(/\\LaTeX/g, "LaTeX")
-        .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)")
+        .replace(/\\d?frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)")
         .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)");
 
       return displayMode
@@ -108,33 +278,45 @@ export default function IChatPage() {
         : `<span class="font-semibold text-blue-900">${fallback}</span>`;
     };
 
-    // 1. Lưu trữ tạm các khối công thức Toán/Hóa
-    const mathBlocks: string[] = [];
-    const saveMath = (html: string) => {
-      const id = `@@MATH_${mathBlocks.length}@@`;
-      mathBlocks.push(html);
+    // 1. Lưu trữ tạm các khối Đồ thị, Hình SVG và Công thức Toán
+    const specialBlocks: string[] = [];
+    const saveBlock = (html: string) => {
+      const id = `@@BLOCK_${specialBlocks.length}@@`;
+      specialBlocks.push(html);
       return id;
     };
 
-    // Tách công thức lớn $$...$$ và [...] thành dòng riêng
-    let processed = rawText.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-      return `\n${saveMath(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
+    // Tách khối vẽ đồ thị ```graph ... ```
+    let processed = rawText.replace(/```graph\s*([\s\S]*?)```/gi, (_, json) => {
+      const graphHtml = renderFunctionGraph(json);
+      return graphHtml ? `\n${saveBlock(graphHtml)}\n` : "";
+    });
+
+    // Tách khối hình học ```svg ... ```
+    processed = processed.replace(/```svg\s*([\s\S]*?)```/gi, (_, svgCode) => {
+      const cleanSvg = svgCode.trim().replace(/\r?\n/g, " ");
+      return `\n${saveBlock(`<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex justify-center overflow-x-auto">${cleanSvg}</div>`)}\n`;
+    });
+
+    // Tách công thức lớn $$...$$ và \[...\]
+    processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
+      return `\n${saveBlock(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
     });
 
     processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, tex) => {
-      return `\n${saveMath(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
+      return `\n${saveBlock(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
     });
 
     // Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
-    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveMath(renderMath(tex, false)));
-    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveMath(renderMath(tex, false)));
+    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveBlock(renderMath(tex, false)));
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveBlock(renderMath(tex, false)));
 
     // 2. Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
     processed = processed
       .replace(/\s+---\s+/g, "\n---\n")
       .replace(/\s+(#{2,4}\s+)/g, "\n$1");
 
-    // 3. Làm sạch HTML và định dạng chữ in đậm (**), danh sách (•), in nghiêng (*), mã lệnh (`)
+    // 3. Làm sạch HTML và định dạng chữ
     processed = escapeHtml(processed)
       .replace(/^---$/gm, '<hr class="my-3 border-gray-200" />')
       .replace(/^###\s+(.+)$/gm, '<div class="font-bold text-blue-800 text-base mt-3 mb-1">$1</div>')
@@ -144,20 +326,64 @@ export default function IChatPage() {
       .replace(/\*([^*\n]+)\*/g, '<em class="italic text-gray-700">$1</em>')
       .replace(/`([^`\n]+)`/g, '<code class="bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>');
 
-    // 4. Chia thành từng đoạn TRƯỚC khi ghép lại mã SVG của KaTeX
-    const lines = processed
+    // 4. Tách dòng và tự động gom các dòng có dấu |...| thành Bảng kẻ ô (Table)
+    const rawLines = processed
       .split(/\n+/)
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
-    // 5. Khôi phục khối công thức Toán/Hóa vào từng dòng
-    return lines.map((line, i) => {
-      const restoredLine = line.replace(/@@MATH_(\d+)@@/g, (_, idx) => mathBlocks[Number(idx)] || "");
+    const groupedBlocks: string[] = [];
+    let idx = 0;
+
+    while (idx < rawLines.length) {
+      if (/^\|.*\|$/.test(rawLines[idx])) {
+        const tableLines: string[] = [];
+        while (idx < rawLines.length && /^\|.*\|$/.test(rawLines[idx])) {
+          tableLines.push(rawLines[idx]);
+          idx++;
+        }
+
+        // Lọc bỏ dòng phân cách | :---: | :---: |
+        const validRows = tableLines.filter((row) => {
+          const cells = row.slice(1, -1).split("|").map((c) => c.trim());
+          return !cells.every((c) => /^[:\-\s]+$/.test(c));
+        });
+
+        if (validRows.length > 0) {
+          const rowsHtml = validRows
+            .map((row, rIdx) => {
+              const cells = row.slice(1, -1).split("|").map((c) => c.trim());
+              const cellsHtml = cells
+                .map((cell, cIdx) => {
+                  const isHeaderCell = cIdx === 0 || (rIdx === 0 && validRows.length > 2);
+                  const cellStyle = isHeaderCell
+                    ? "bg-blue-50/80 font-semibold text-blue-950"
+                    : "bg-white text-gray-800";
+                  return `<td class="border border-blue-200 px-3.5 py-2 text-center ${cellStyle}">${cell}</td>`;
+                })
+                .join("");
+              return `<tr>${cellsHtml}</tr>`;
+            })
+            .join("");
+
+          groupedBlocks.push(
+            `<div class="my-2.5 overflow-x-auto"><table class="border-collapse border border-blue-200 text-sm md:text-base">${rowsHtml}</table></div>`
+          );
+        }
+      } else {
+        groupedBlocks.push(rawLines[idx]);
+        idx++;
+      }
+    }
+
+    // 5. Khôi phục khối Đồ thị, SVG và Công thức Toán vào từng dòng/bảng
+    return groupedBlocks.map((block, i) => {
+      const restoredBlock = block.replace(/@@BLOCK_(\d+)@@/g, (_, bIdx) => specialBlocks[Number(bIdx)] || "");
       return (
         <div
           key={i}
-          className="leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: restoredLine }}
+          className="leading-loose py-0.5"
+          dangerouslySetInnerHTML={{ __html: restoredBlock }}
         />
       );
     });
