@@ -7,6 +7,14 @@ interface Message {
   text: string;
 }
 
+declare global {
+  interface Window {
+    katex?: {
+      renderToString: (tex: string, options?: { displayMode?: boolean; throwOnError?: boolean }) => string;
+    };
+  }
+}
+
 export default function IChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -16,7 +24,37 @@ export default function IChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [katexReady, setKatexReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Tự động nạp bộ hiển thị công thức Toán - Lý - Hóa KaTeX
+  useEffect(() => {
+    if (!document.getElementById("katex-css")) {
+      const link = document.createElement("link");
+      link.id = "katex-css";
+      link.rel = "stylesheet";
+      link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css";
+      document.head.appendChild(link);
+    }
+
+    if (window.katex) {
+      setKatexReady(true);
+      return;
+    }
+
+    const existingScript = document.getElementById("katex-js") as HTMLScriptElement | null;
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setKatexReady(true));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "katex-js";
+    script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js";
+    script.async = true;
+    script.onload = () => setKatexReady(true);
+    document.head.appendChild(script);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,6 +63,105 @@ export default function IChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  // Hàm định dạng văn bản, chia đoạn và hiển thị công thức Toán/Hóa LaTeX
+  const formatAIMessage = (rawText: string) => {
+    const escapeHtml = (str: string) =>
+      str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    const renderMath = (tex: string, displayMode: boolean) => {
+      const cleanTex = tex.trim();
+      if (katexReady && window.katex) {
+        try {
+          // Xóa các ký tự xuống dòng bên trong thẻ SVG của KaTeX để không bị cắt đứt mũi tên/căn thức
+          return window.katex
+            .renderToString(cleanTex, {
+              displayMode,
+              throwOnError: false,
+            })
+            .replace(/\r?\n/g, " ");
+        } catch {
+          // Dự phòng nếu biểu thức lỗi
+        }
+      }
+      const fallback = escapeHtml(cleanTex)
+        .replace(/\\times/g, " × ")
+        .replace(/\\div/g, " ÷ ")
+        .replace(/\\cdot/g, " · ")
+        .replace(/\\pm/g, " ± ")
+        .replace(/\\leq/g, " ≤ ")
+        .replace(/\\geq/g, " ≥ ")
+        .replace(/\\neq/g, " ≠ ")
+        .replace(/\\rightarrow|\\to/g, " → ")
+        .replace(/\\xrightarrow\{([^{}]*)\}/g, " —($1)→ ")
+        .replace(/\\Rightarrow/g, " ⇒ ")
+        .replace(/\\Leftrightarrow/g, " ⇔ ")
+        .replace(/\\LaTeX/g, "LaTeX")
+        .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)")
+        .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)");
+
+      return displayMode
+        ? `<div class="my-2 py-1.5 px-3 bg-blue-50/70 rounded-lg font-semibold text-blue-950 text-center">${fallback}</div>`
+        : `<span class="font-semibold text-blue-900">${fallback}</span>`;
+    };
+
+    // 1. Lưu trữ tạm các khối công thức Toán/Hóa
+    const mathBlocks: string[] = [];
+    const saveMath = (html: string) => {
+      const id = `@@MATH_${mathBlocks.length}@@`;
+      mathBlocks.push(html);
+      return id;
+    };
+
+    // Tách công thức lớn $$...$$ và [...] thành dòng riêng
+    let processed = rawText.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
+      return `\n${saveMath(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
+    });
+
+    processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, tex) => {
+      return `\n${saveMath(`<div class="my-2 overflow-x-auto">${renderMath(tex, true)}</div>`)}\n`;
+    });
+
+    // Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
+    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveMath(renderMath(tex, false)));
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveMath(renderMath(tex, false)));
+
+    // 2. Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
+    processed = processed
+      .replace(/\s+---\s+/g, "\n---\n")
+      .replace(/\s+(#{2,4}\s+)/g, "\n$1");
+
+    // 3. Làm sạch HTML và định dạng chữ in đậm (**), danh sách (•), in nghiêng (*), mã lệnh (`)
+    processed = escapeHtml(processed)
+      .replace(/^---$/gm, '<hr class="my-3 border-gray-200" />')
+      .replace(/^###\s+(.+)$/gm, '<div class="font-bold text-blue-800 text-base mt-3 mb-1">$1</div>')
+      .replace(/^##\s+(.+)$/gm, '<div class="font-bold text-blue-900 text-lg mt-3 mb-1">$1</div>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>')
+      .replace(/^\s*[\*\-]\s+/gm, "• ")
+      .replace(/\*([^*\n]+)\*/g, '<em class="italic text-gray-700">$1</em>')
+      .replace(/`([^`\n]+)`/g, '<code class="bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>');
+
+    // 4. Chia thành từng đoạn TRƯỚC khi ghép lại mã SVG của KaTeX
+    const lines = processed
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    // 5. Khôi phục khối công thức Toán/Hóa vào từng dòng
+    return lines.map((line, i) => {
+      const restoredLine = line.replace(/@@MATH_(\d+)@@/g, (_, idx) => mathBlocks[Number(idx)] || "");
+      return (
+        <div
+          key={i}
+          className="leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: restoredLine }}
+        />
+      );
+    });
+  };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -77,7 +214,7 @@ export default function IChatPage() {
               </p>
             </div>
           </div>
-          <span className="bg-blue-800/60 text-xs px-3 py-1 rounded-full border border-blue-400/30">Free Gemini AI</span>
+          <span className="bg-blue-800/60 text-xs px-3 py-1 rounded-full border border-blue-400/30">10 Plus AI</span>
         </div>
 
         {/* KHU VỰC TIN NHẮN */}
@@ -90,11 +227,11 @@ export default function IChatPage() {
               <div
                 className={`max-w-[80%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed ${
                   msg.sender === "user"
-                    ? "bg-blue-600 text-white rounded-br-none"
-                    : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                    ? "bg-blue-600 text-white rounded-br-none whitespace-pre-wrap"
+                    : "bg-white text-gray-800 border border-gray-100 rounded-bl-none space-y-2"
                 }`}
               >
-                {msg.text}
+                {msg.sender === "user" ? msg.text : formatAIMessage(msg.text)}
               </div>
             </div>
           ))}
