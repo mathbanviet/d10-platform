@@ -1,4 +1,3 @@
-```tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -102,7 +101,6 @@ export default function IChatPage() {
   const [, setKatexTick] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Nạp KaTeX + gói Hóa học mhchem từ Cloudflare CDN (ổn định và không bị chặn tại VN)
   useEffect(() => {
     if (!document.getElementById("katex-css")) {
       const link = document.createElement("link");
@@ -160,7 +158,6 @@ export default function IChatPage() {
     scrollToBottom();
   }, [messages, loading]);
 
-  // Hàm tính giá trị biểu thức y = f(x)
   const evalMathExpr = (exprStr: string, xVal: number): number => {
     try {
       if (!exprStr || !exprStr.trim()) return NaN;
@@ -836,11 +833,9 @@ export default function IChatPage() {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 
-    // Bộ chuyển đổi công thức Toán - Lý - Hóa - Sinh sang HTML đẹp mắt (kể cả khi không có CDN hoặc ngoặc lồng nhau)
     const convertLatexToRichHtml = (inputTex: string): string => {
       let s = escapeHtml(inputTex.trim());
 
-      // Bước 1: Gỡ nhiều tầng các lệnh bọc chữ \text{...}, \mathrm{...}, \ce{...}, \textbf{...}
       for (let i = 0; i < 5; i++) {
         s = s.replace(
           /\\(?:text|mathrm|textbf|textit|mathit|mathbf|ce|pu)\{([^{}]*)\}/g,
@@ -848,13 +843,11 @@ export default function IChatPage() {
         );
       }
 
-      // Bước 2: Chuẩn hóa ký hiệu độ (t^o, ^\circ) TRƯỚC khi dựng mũi tên
       s = s
         .replace(/\^\{?\s*\\circ\s*\}?/g, "°")
         .replace(/\bt\^\{?o\}?\b/g, "t°")
         .replace(/\\degree/g, "°");
 
-      // Bước 3: Dựng mũi tên phản ứng hóa học \xrightarrow[dưới]{trên} và \xrightarrow{trên}
       s = s
         .replace(
           /\\xrightarrow\[([^{}\]]*)\]\{([^{}]*)\}/g,
@@ -873,7 +866,6 @@ export default function IChatPage() {
           '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] font-medium text-blue-900 leading-tight px-2 border-b-[1.5px] border-blue-800">$1</span><span class="text-[7px] leading-none">&nbsp;</span></span><span class="-ml-2 mr-1 text-blue-900 font-bold">►</span>'
         );
 
-      // Bước 4: Dựng phân số thẳng đứng chuẩn \dfrac{tử}{mẫu} (hỗ trợ phân số lồng nhau)
       for (let i = 0; i < 3; i++) {
         s = s.replace(
           /\\(?:d?frac|tfrac)\{([^{}]+)\}\{([^{}]+)\}/g,
@@ -881,7 +873,6 @@ export default function IChatPage() {
         );
       }
 
-      // Bước 5: Dựng căn bậc hai / bậc n và vectơ / góc
       for (let i = 0; i < 2; i++) {
         s = s
           .replace(
@@ -900,7 +891,6 @@ export default function IChatPage() {
           .replace(/\\underline\{([^{}]+)\}/g, "<u>$1</u>");
       }
 
-      // Bước 6: Thay thế các toán tử Toán - Lý - Hóa - Sinh phổ biến
       s = s
         .replace(/\\displaystyle/g, "")
         .replace(/\\left\s*([(\[\{|])/g, "$1")
@@ -959,14 +949,12 @@ export default function IChatPage() {
         .replace(/\\lim/g, "lim")
         .replace(/\\quad|\\qquad|\\,|\\;|\\!/g, " ");
 
-      // Bước 7: Chuyển đổi chỉ số trên ^{...}, ^x và chỉ số dưới _{...}, _x (H₂O, C₆H₁₂O₆, x²)
       s = s
         .replace(/\^\{([^{}]+)\}/g, "<sup>$1</sup>")
         .replace(/\^([0-9a-zA-Z+\-°]+)/g, "<sup>$1</sup>")
         .replace(/\_\{([^{}]+)\}/g, "<sub>$1</sub>")
         .replace(/\_([0-9a-zA-Z+\-]+)/g, "<sub>$1</sub>");
 
-      // Bước 8: Dọn sạch các dấu ngoặc nhọn { } hoặc lệnh \ thừa còn sót lại
       s = s.replace(/\\([a-zA-Z]+)/g, "$1").replace(/[{}]/g, "");
 
       return s;
@@ -981,7 +969,6 @@ export default function IChatPage() {
         .replace(/\\sum\b/g, "\\displaystyle\\sum")
         .replace(/\\int\b/g, "\\displaystyle\\int");
 
-      // Nếu KaTeX đã sẵn sàng VÀ biểu thức không chứa tiếng Việt có dấu trong \xrightarrow gây lỗi font
       const hasComplexChemArrow =
         /\\xrightarrow|\\xrightleftharpoons/.test(cleanTex) &&
         /[^\x00-\x7F]/.test(cleanTex);
@@ -1001,7 +988,7 @@ export default function IChatPage() {
             })
             .replace(/\r?\n/g, " ");
         } catch {
-          // Chuyển ngay sang bộ dựng HTML chất lượng cao bên dưới nếu KaTeX báo lỗi
+          // Chuyển sang bộ dựng HTML nội bộ nếu KaTeX báo lỗi
         }
       }
 
@@ -1020,7 +1007,6 @@ export default function IChatPage() {
       return id;
     };
 
-    // 0. Bảo vệ thẻ gạch chân <u>...</u> cho bài tập phát âm Tiếng Anh
     let processed = rawText.replace(/<u>([\s\S]*?)<\/u>/gi, (_, content) =>
       saveBlock(
         '<u class="decoration-2 decoration-blue-700 underline-offset-4 font-bold text-blue-900">' +
@@ -1029,7 +1015,6 @@ export default function IChatPage() {
       )
     );
 
-    // 1. Tách khối vẽ đồ thị ```graph ... ```
     processed = processed.replace(
       /\x60\x60\x60graph\s*([\s\S]*?)\x60\x60\x60/gi,
       (_, json) => {
@@ -1038,7 +1023,6 @@ export default function IChatPage() {
       }
     );
 
-    // 2. Tách khối vẽ hình học 2D/3D ```geo ... ```
     processed = processed.replace(
       /\x60\x60\x60geo\s*([\s\S]*?)\x60\x60\x60/gi,
       (_, json) => {
@@ -1047,7 +1031,6 @@ export default function IChatPage() {
       }
     );
 
-    // 3. Tách khối hình SVG ```svg ... ```
     processed = processed.replace(
       /\x60\x60\x60svg\s*([\s\S]*?)\x60\x60\x60/gi,
       (_, svgCode) => {
@@ -1064,7 +1047,6 @@ export default function IChatPage() {
       }
     );
 
-    // 4. Tách công thức lớn $$...$$ và \[...\]
     processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
       return (
         "\n" +
@@ -1089,7 +1071,6 @@ export default function IChatPage() {
       );
     });
 
-    // 5. Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
     processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) =>
       saveBlock(renderMath(String(tex), false))
     );
@@ -1097,8 +1078,6 @@ export default function IChatPage() {
       saveBlock(renderMath(String(tex), false))
     );
 
-    // 6. LƯỚI BẢO VỆ CHỐNG LỘ MÃ LATEX (Khi AI quên bọc dấu $...$):
-    // 6a. Nếu cả dòng là phương trình phản ứng có \xrightarrow hoặc \xrightleftharpoons mà AI quên bọc $$
     processed = processed.replace(
       /^([^\n]*(?:\\xrightarrow|\\xrightleftharpoons)[^\n]*)$/gm,
       (line) => {
@@ -1115,7 +1094,6 @@ export default function IChatPage() {
       }
     );
 
-    // 6b. Nếu trong ngoặc đơn (...) chứa mã LaTeX trần như (\text{C}_6\text{H}_{12}\text{O}_6)
     processed = processed.replace(
       /\(([^()\n]*\\(?:text|mathrm|ce|dfrac|frac|sqrt|rightarrow|to)[^()\n]*)\)/g,
       (_, innerTex) => {
@@ -1124,7 +1102,6 @@ export default function IChatPage() {
       }
     );
 
-    // 6c. Quét các lệnh LaTeX rời rạc còn sót lại ngoài dấu $ (như \text{C}_6\text{H}_{12}\text{O}_6, \dfrac{a}{b}, C_6H_{12}O_6)
     processed = processed.replace(
       /(?:\\(?:text|mathrm|ce)\{[^{}]+\}|\\(?:d?frac)\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|[A-Z][a-z]?(?:_\{?\d+\}?|\^\{?[0-9+\-]+}?)+)+/g,
       (match) => {
@@ -1133,12 +1110,10 @@ export default function IChatPage() {
       }
     );
 
-    // Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
     processed = processed
       .replace(/\s+---\s+/g, "\n---\n")
       .replace(/\s+(#{2,4}\s+)/g, "\n$1");
 
-    // Làm sạch HTML, định dạng chữ và đưa dấu + của 10+ lên làm số mũ
     processed = escapeHtml(processed)
       .replace(/^---$/gm, '<hr class="my-3 border-gray-200" />')
       .replace(
@@ -1169,7 +1144,6 @@ export default function IChatPage() {
       )
       .replace(/10\+/g, '10<sup class="font-bold">+</sup>');
 
-    // Tách dòng và tự động gom các dòng có dấu |...| thành Bảng kẻ ô (Table)
     const rawLines = processed
       .split(/\n+/)
       .map((line) => line.trim())
@@ -1234,7 +1208,6 @@ export default function IChatPage() {
       }
     }
 
-    // Khôi phục khối Đồ thị, Hình học 2D/3D và Công thức Toán/Lý/Hóa/Sinh vào từng dòng/bảng
     return groupedBlocks.map((block, i) => {
       const restoredBlock = block.replace(
         /@@BLOCK_(\d+)@@/g,
@@ -1258,7 +1231,6 @@ export default function IChatPage() {
     setMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
     setLoading(true);
 
-    // Tự động lấy Khối lớp của học sinh đã đăng nhập (nếu có) để AI giải đúng lớp
     let savedGrade = "";
     try {
       const savedProfile = localStorage.getItem("d10_user_profile");
@@ -1419,4 +1391,3 @@ export default function IChatPage() {
     </div>
   );
 }
-```
