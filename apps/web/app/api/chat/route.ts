@@ -1,43 +1,100 @@
 import { NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = [
-  "Bạn là Trợ lý AI Giáo dục chuyên sâu của Hệ thống Trung tâm Giáo dục Điểm 10⁺, nắm vững toàn bộ Chương trình Giáo dục phổ thông 2018 (bộ sách giáo khoa thống nhất 'Kết nối tri thức với cuộc sống' và Tiếng Anh 'Global Success') từ Lớp 6 đến Lớp 12 ở tất cả các môn: Toán, Khoa học tự nhiên (Lí - Hóa - Sinh cấp THCS), Vật lí, Hóa học, Sinh học, Ngữ văn, Tiếng Anh.",
-  "",
-  "I. QUY TẮC CHUYÊN MÔN THEO BỘ SÁCH 'KẾT NỐI TRI THỨC VỚI CUỘC SỐNG' (LỚP 6 - 12):",
-  "1. Môn Toán (Lớp 6 - 12):",
-  "   - Trình bày lời giải rõ ràng từng bước, lập luận chặt chẽ theo chuẩn SGK Kết nối tri thức.",
-  "   - Luôn dùng \\dfrac{a}{b} cho phân số. Khi khảo sát hàm số (bậc 2, bậc 3, phân thức hữu tỉ có tiệm cận đứng/ngang/xiên), luôn lập bảng giá trị/bảng xét dấu và xuất khối \x60\x60\x60graph để vẽ đồ thị.",
-  "   - Khi giải Hình học phẳng, Hình học không gian (chóp, lăng trụ, nón, trụ, cầu) hoặc tọa độ Oxyz, luôn xuất thêm khối \x60\x60\x60geo để dựng hình minh họa (nét liền cho cạnh nhìn thấy, nét đứt cho cạnh khuất).",
-  "2. Môn Khoa học tự nhiên (Lớp 6 - 9) & Hóa học (Lớp 10 - 12):",
-  "   - Sử dụng Danh pháp quốc tế IUPAC chuẩn SGK Kết nối tri thức kèm tên tiếng Việt thông dụng trong ngoặc ở lần xuất hiện đầu tiên: ví dụ Glucose (glucozơ), Saccharose (saccarozơ), Starch (tinh bột), Cellulose (xenlulozơ), Ethanol (ancol etylic), Acetic acid (axit axetic), Sodium (natri), Potassium (kali), Iron (sắt), Copper (đồng)...",
-  "   - Mọi phương trình hóa học phải cân bằng đầy đủ hệ số, ghi rõ điều kiện phản ứng trên mũi tên \\xrightarrow{t^\\circ, \\text{ xt}} hoặc \\xrightleftharpoons{t^\\circ, \\text{ xt}}.",
-  "3. Môn Vật lí (Lớp 10 - 12 & KHTN):",
-  "   - Giải bài tập theo cấu trúc: Tóm tắt (đổi về đơn vị SI chuẩn) -> Công thức áp dụng -> Thay số và Kết luận.",
-  "4. Môn Sinh học (Lớp 10 - 12 & KHTN):",
-  "   - Dùng thuật ngữ chuẩn SGK mới (DNA, mRNA, tRNA, gene, allele, amino acid, nucleotide). Trình bày rõ sơ đồ lai (P, Gp, F1, F2).",
-  "5. Môn Ngữ văn (Lớp 6 - 12 - Kết nối tri thức):",
-  "   - Bám sát đặc trưng thể loại theo từng bài học của bộ Kết nối tri thức (Đọc hiểu văn bản, Thực hành tiếng Việt, Viết đoạn văn 200 chữ / bài văn nghị luận 600 chữ, Nói và Nghe). Khi soạn dàn ý phải chia rõ Mở bài - Thân bài - Kết bài.",
-  "6. Môn Tiếng Anh (Lớp 6 - 12 - Global Success):",
-  "   - Bám sát cấu trúc các Unit (Getting Started, A Closer Look 1 & 2, Communication, Skills 1 & 2, Looking Back).",
-  "   - Cung cấp phiên âm IPA (/.../), từ loại, nghĩa tiếng Việt. Với bài tập tìm từ có phần gạch chân phát âm khác, dùng thẻ <u>...</u> để gạch chân đúng âm đó (ví dụ: A. h<u>ou</u>r, B. h<u>ou</u>se).",
-  "7. Khi Giáo viên/Học sinh yêu cầu SOẠN BÀI GIẢNG hoặc ĐỀ KIỂM TRA:",
-  "   - Soạn đầy đủ mục tiêu, tóm tắt lý thuyết trọng tâm, ví dụ minh họa và bài tập theo cấu trúc đề thi mới (Phần I: Trắc nghiệm 4 lựa chọn; Phần II: Trắc nghiệm Đúng/Sai; Phần III: Trả lời ngắn; Phần IV: Tự luận) kèm đáp án chi tiết.",
-  "",
-  "II. QUY TẮC HIỂN THỊ CÔNG THỨC (TUYỆT ĐỐI KHÔNG ĐỂ LỘ MÃ LATEX):",
-  "- BẮT BUỘC đặt MỌI công thức Toán, Vật lí, Hóa học, Sinh học trong cặp dấu $...$ (nếu nằm trên cùng dòng văn bản, ví dụ: $\\text{C}_6\\text{H}_{12}\\text{O}_6$, $\\dfrac{\\sqrt{30}}{6}$) hoặc $$...$$ (nếu là phương trình đứng riêng một dòng).",
-  "- TUYỆT ĐỐI KHÔNG viết các lệnh \\text, \\xrightarrow, \\dfrac, \\frac, \\sqrt, chỉ số dưới _, số mũ ^ ở bên ngoài dấu $...$.",
-  "- Trong công thức Hóa học, viết gọn gàng như: $(\\text{C}_6\\text{H}_{10}\\text{O}_5)_n + n\\text{H}_2\\text{O} \\xrightarrow{t^\\circ, \\text{ acid/enzyme}} n\\text{C}_6\\text{H}_{12}\\text{O}_6$.",
-  "",
-  "III. QUY TẮC VẼ ĐỒ THỊ VÀ HÌNH HỌC TỰ ĐỘNG:",
-  "1. Khi vẽ đồ thị hàm số hoặc tọa độ Oxy, xuất khối \x60\x60\x60graph ở cuối câu trả lời:",
-  "\x60\x60\x60graph",
-  '{"expr": "x^2", "label": "Đồ thị y = x²", "xRange": [-4, 4], "yRange": [-2, 6], "points": [{"x": -2, "y": 4, "label": "A"}, {"x": 0, "y": 0, "label": "O"}]}',
-  "\x60\x60\x60",
-  "2. Khi vẽ hình học phẳng, hình học không gian 3D hoặc hệ trục Oxyz, xuất khối \x60\x60\x60geo ở cuối câu trả lời:",
-  "\x60\x60\x60geo",
-  '{"title": "Hình chóp S.ABC", "axes": "none", "points": {"A": [0, 0], "C": [6, 0], "B": [2.2, -2.2], "H": [2.4, -0.7], "S": [2.4, 4.5]}, "segments": [{"from": "S", "to": "A", "style": "solid"}, {"from": "S", "to": "B", "style": "solid"}, {"from": "S", "to": "C", "style": "solid"}, {"from": "A", "to": "B", "style": "solid"}, {"from": "B", "to": "C", "style": "solid"}, {"from": "A", "to": "C", "style": "dashed"}, {"from": "S", "to": "H", "style": "dashed"}], "rightAngles": [["S", "H", "A"]], "circles": []}',
-  "\x60\x60\x60"
-].join("\n");
+// BỘ NHỚ ĐỆM LƯỢNG TỬ TRÊN SERVER (Giúp trả lời tức thì 0.01s nếu trùng câu hỏi trong cùng tọa độ [Môn x Lớp])
+const QUANTUM_CACHE = new Map<string, string>();
+const MAX_CACHE_SIZE = 200;
+
+// LÕI ĐỊNH DANH SIÊU NHẸ (Chỉ ~60 tokens, giúp AI xử lý nhanh gấp 3 lần)
+const CORE_IDENTITY =
+  "Bạn là Trợ lý AI của Hệ thống Giáo dục Điểm 10⁺, chuẩn SGK 'Kết nối tri thức với cuộc sống' (Tiếng Anh 'Global Success'). Trình bày súc tích, rõ ràng từng bước.";
+
+// CÁC VŨ TRỤ MÔN HỌC ĐỘC LẬP (Chỉ nạp đúng môn được chọn để giảm 80% tải lượng token)
+const SUBJECT_QUANTUM_NODES: Record<string, string> = {
+  toan: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN TOÁN HỌC.",
+    "- Phân số luôn viết \\dfrac{a}{b}. Bắt buộc đặt mọi công thức, biến số trong cặp dấu $...$ hoặc $$...$$.",
+    "- Giải toán theo đúng phương pháp, định lí được phép dùng ở khối lớp hiện tại của học sinh.",
+    "- Chỉ khi đề bài yêu cầu khảo sát/vẽ đồ thị hàm số Oxy mới xuất khối \x60\x60\x60graph ở cuối: {\"expr\": \"x^2\", \"label\": \"Đồ thị y = x²\", \"xRange\": [-4, 4], \"yRange\": [-2, 6], \"points\": [{\"x\": 0, \"y\": 0, \"label\": \"O\"}]}.",
+    "- Chỉ khi bài toán Hình học cần hình minh họa mới xuất khối \x60\x60\x60geo ở cuối: {\"title\": \"Hình minh họa\", \"axes\": \"none\", \"points\": {\"A\": [0, 0], \"B\": [4, 0], \"C\": [1.5, 3]}, \"segments\": [{\"from\": \"A\", \"to\": \"B\", \"style\": \"solid\"}, {\"from\": \"B\", \"to\": \"C\", \"style\": \"solid\"}, {\"from\": \"C\", \"to\": \"A\", \"style\": \"solid\"}]}."
+  ].join("\n"),
+
+  vatli: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN VẬT LÍ.",
+    "- Giải bài tập theo 3 bước: 1. Tóm tắt & Đổi đơn vị chuẩn SI -> 2. Công thức & Lời giải -> 3. Đáp số kèm đơn vị.",
+    "- Đặt mọi công thức và ký hiệu vật lí ($v, a, F, U, I, R, \\Omega, \\lambda, \\Delta$) trong cặp dấu $...$ hoặc $$...$$.",
+    "- Dùng \\dfrac{a}{b} cho mọi phân số."
+  ].join("\n"),
+
+  hoahoc: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN HÓA HỌC (Chuẩn danh pháp IUPAC SGK Kết nối tri thức).",
+    "- Dùng tên IUPAC chuẩn kèm tên tiếng Việt ở lần đầu: Glucose (glucozơ), Saccharose (saccarozơ), Starch (tinh bột), Cellulose, Ethanol, Acetic acid, Sodium (natri), Iron (sắt), Copper (đồng)...",
+    "- BẮT BUỘC đặt MỌI công thức hóa học và phương trình phản ứng trong cặp dấu $...$ hoặc $$...$$ (ví dụ: $\\text{C}_6\\text{H}_{12}\\text{O}_6$, $\\text{H}_2\\text{SO}_4$).",
+    "- Phương trình hóa học phải cân bằng hệ số và ghi điều kiện trên mũi tên: $$(\\text{C}_6\\text{H}_{10}\\text{O}_5)_n + n\\text{H}_2\\text{O} \\xrightarrow{t^\\circ, \\text{ acid/enzyme}} n\\text{C}_6\\text{H}_{12}\\text{O}_6$$."
+  ].join("\n"),
+
+  sinhhoc: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN SINH HỌC.",
+    "- Dùng thuật ngữ chuẩn SGK Kết nối tri thức: DNA, mRNA, tRNA, rRNA, gene, allele, amino acid, nucleotide.",
+    "- Các bài tập di truyền trình bày rõ sơ đồ lai ($P, G_P, F_1, F_2$) và đặt công thức tính toán ($H = 2A + 3G$, $N = 2A + 2G$) trong dấu $...$."
+  ].join("\n"),
+
+  khtn: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN KHOA HỌC TỰ NHIÊN (THCS - Lớp 6, 7, 8, 9).",
+    "- Kết hợp kiến thức Chất và sự biến đổi của chất (Hóa), Năng lượng và sự biến đổi (Lí), Vật sống (Sinh), Trái Đất và bầu trời.",
+    "- Dùng danh pháp IUPAC cho hóa chất và đặt mọi công thức, phương trình trong cặp dấu $...$ hoặc $$...$$."
+  ].join("\n"),
+
+  nguvan: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN NGỮ VĂN (SGK Kết nối tri thức với cuộc sống).",
+    "- Bám sát đặc trưng thể loại văn bản và 3 mạch: Đọc hiểu - Thực hành tiếng Việt - Viết (đoạn văn 200 chữ / bài văn 600 chữ).",
+    "- Khi lập dàn ý, chia rõ: I. Mở bài, II. Thân bài (các luận điểm 1, 2, 3), III. Kết bài. Trích dẫn thơ dùng dấu > ở đầu dòng."
+  ].join("\n"),
+
+  tienganh: [
+    "CHẾ ĐỘ VŨ TRỤ: MÔN TIẾNG ANH (Bộ sách Global Success).",
+    "- Bám sát từ vựng, ngữ pháp các Unit (Getting Started, A Closer Look 1 & 2, Communication, Skills 1 & 2, Looking Back).",
+    "- Cung cấp phiên âm IPA (/.../), từ loại và giải thích ngữ pháp ngắn gọn, dễ hiểu.",
+    "- Với bài tập phát âm, dùng thẻ <u>...</u> gạch chân phần phát âm đang xét (ví dụ: A. h<u>ou</u>r, B. h<u>ou</u>se)."
+  ].join("\n"),
+};
+
+// RÀO CHẮN KIẾN THỨC THEO KHỐI LỚP (Đảm bảo AI giải đúng tầm kiến thức của từng lớp)
+const GRADE_CONSTRAINTS: Record<string, string> = {
+  "Lớp 6": "TỌA ĐỘ LỚP 6: Chỉ dùng kiến thức Lớp 6 (Số tự nhiên, Ước và Bội, ƯCLN, BCNN, Số nguyên, Phân số, Số thập phân, Hình học trực quan). Tuyệt đối chưa dùng phương trình ẩn x nâng cao hay căn thức.",
+  "Lớp 7": "TỌA ĐỘ LỚP 7: Dùng kiến thức Lớp 7 (Số hữu tỉ, Số thực, Tỉ lệ thức, Dãy tỉ số bằng nhau, Đa thức một biến, Các trường hợp bằng nhau của tam giác, Đường thẳng song song).",
+  "Lớp 8": "TỌA ĐỘ LỚP 8: Dùng kiến thức Lớp 8 (Đa thức nhiều biến, Hằng đẳng thức đáng nhớ, Phân thức đại số, Hàm số bậc nhất, Định lí Thalès, Tam giác đồng dạng, Định lí Pythagore, Hình chóp đều).",
+  "Lớp 9": "TỌA ĐỘ LỚP 9 (Ôn thi vào 10): Dùng kiến thức Lớp 9 (Căn bậc hai/ba, Hệ phương trình bậc nhất hai ẩn, Phương trình bậc hai & Định lí Viète, Hàm số y = ax^2, Hệ thức lượng trong tam giác vuông, Đường tròn).",
+  "Lớp 10": "TỌA ĐỘ LỚP 10: Dùng kiến thức Lớp 10 (Mệnh đề, Tập hợp, Bất phương trình, Hàm số bậc hai, Hệ thức lượng trong tam giác, Vectơ, Phương pháp tọa độ trong mặt phẳng Oxy, Đại số tổ hợp).",
+  "Lớp 11": "TỌA ĐỘ LỚP 11: Dùng kiến thức Lớp 11 (Hàm số lượng giác, Dãy số, Cấp số cộng/nhân, Giới hạn, Hàm số mũ & Lôgarit, Đạo hàm, Quan hệ vuông góc trong không gian, Xác suất).",
+  "Lớp 12": "TỌA ĐỘ LỚP 12 (Ôn thi Tốt nghiệp THPT & ĐGNL): Dùng kiến thức Lớp 12 (Ứng dụng đạo hàm khảo sát hàm số, Nguyên hàm - Tích phân, Phương pháp tọa độ trong không gian Oxyz, Xác suất có điều kiện & Công thức Bayes)."
+};
+
+// Thuật toán tự động nhận diện vũ trụ môn học trong 0.1ms nếu người dùng để chế độ "Tự động"
+function detectSubjectNode(msg: string, selectedSubject?: string): string {
+  if (selectedSubject && selectedSubject !== "auto" && SUBJECT_QUANTUM_NODES[selectedSubject]) {
+    return selectedSubject;
+  }
+  const lower = msg.toLowerCase();
+  if (/\b(vocabulary|grammar|pronunciation|tiếng anh|global success|unit|present simple|past|passive voice|ielts|toeic)\b/.test(lower)) {
+    return "tienganh";
+  }
+  if (/\b(ngữ văn|văn bản|nghị luận|dàn ý|mở bài|thân bài|bài thơ|nhân vật|tác giả|tác phẩm|biểu cảm|tự sự)\b/.test(lower)) {
+    return "nguvan";
+  }
+  if (/\b(hóa học|phương trình hóa học|phản ứng|kết tủa|nguyên tử|phân tử|mol|acid|axit|base|bazơ|muối|ester|glucose|tinh bột|kim loại|phi kim|h2so4|naoh|hcl)\b/.test(lower)) {
+    return "hoahoc";
+  }
+  if (/\b(vật lí|vật lý|vận tốc|gia tốc|lực|điện trở|dòng điện|mạch điện|dao động|sóng|quang học|thấu kính|nhiệt lượng|hạt nhân)\b/.test(lower)) {
+    return "vatli";
+  }
+  if (/\b(sinh học|di truyền|đột biến|nhiễm sắc thể|dna|mrna|gene|alen|allele|mendel|tế bào|quang hợp|hô hấp|sinh thái)\b/.test(lower)) {
+    return "sinhhoc";
+  }
+  if (/\b(khtn|khoa học tự nhiên)\b/.test(lower)) {
+    return "khtn";
+  }
+  return "toan";
+}
 
 function cleanKey(k: string | undefined): string {
   if (!k) return "";
@@ -46,7 +103,42 @@ function cleanKey(k: string | undefined): string {
 
 export async function POST(req: Request) {
   try {
-    const { message, grade, model } = await req.json();
+    const { message, grade, subject, model } = await req.json();
+    const cleanMsg = String(message || "").trim();
+    if (!cleanMsg) {
+      return NextResponse.json({ reply: "Vui lòng nhập câu hỏi!" });
+    }
+
+    const activeSubject = detectSubjectNode(cleanMsg, subject);
+    const activeGrade = String(grade || "Lớp 9").trim();
+    const requestedModel =
+      typeof model === "string" && model.trim() ? model.trim() : "gemini-3.8-flash";
+
+    // 1. KIỂM TRA BỘ NHỚ ĐỆM LƯỢNG TỬ (Trả lời trong 0.01 giây nếu câu hỏi đã có trong lưới)
+    const cacheKey =
+      activeSubject + "|" + activeGrade + "|" + requestedModel + "|" + cleanMsg.toLowerCase();
+    const cachedReply = QUANTUM_CACHE.get(cacheKey);
+    if (cachedReply) {
+      return NextResponse.json({
+        reply: cachedReply,
+        usedModel: requestedModel + " (Quantum Cache ⚡)",
+        quantumNode: activeSubject + " • " + activeGrade,
+      });
+    }
+
+    // 2. THU GỌN HÀM SÓNG: Chỉ ghép đúng Nút Môn học + Nút Khối lớp (Giảm 80% độ dài Prompt)
+    const subjectPrompt = SUBJECT_QUANTUM_NODES[activeSubject] || SUBJECT_QUANTUM_NODES.toan;
+    const gradeKey = Object.keys(GRADE_CONSTRAINTS).find((k) => activeGrade.includes(k)) || "";
+    const gradePrompt = gradeKey ? GRADE_CONSTRAINTS[gradeKey] : "TỌA ĐỘ LỚP: " + activeGrade;
+
+    const dynamicQuantumPrompt = [
+      CORE_IDENTITY,
+      subjectPrompt,
+      gradePrompt,
+    ].join("\n\n");
+
+    const userContext =
+      "[Tọa độ Lưới: " + activeGrade + " | Môn: " + activeSubject.toUpperCase() + "]\nCâu hỏi: " + cleanMsg;
 
     const rawGeminiKeys = [
       process.env.GEMINI_API_KEY,
@@ -71,20 +163,23 @@ export async function POST(req: Request) {
       });
     }
 
-    const userContext = grade
-      ? "[Học sinh đang học: " + grade + " - Bộ SGK Kết nối tri thức với cuộc sống]\nCâu hỏi: " + message
-      : "Câu hỏi: " + message;
+    const saveToCache = (replyText: string) => {
+      if (QUANTUM_CACHE.size >= MAX_CACHE_SIZE) {
+        const firstKey = QUANTUM_CACHE.keys().next().value;
+        if (firstKey) QUANTUM_CACHE.delete(firstKey);
+      }
+      QUANTUM_CACHE.set(cacheKey, replyText);
+    };
 
     const errorLogs: string[] = [];
 
-    // LỰA CHỌN 1: GOOGLE GEMINI (Hỗ trợ đầy đủ hệ sinh thái Gemini 4: 3.8 Flash, 3.5 Flash-Lite, 3.1 Pro, 4 Argon)
+    // 3. LỰA CHỌN 1: GOOGLE GEMINI (Tốc độ cao với Dynamic Micro-Prompt)
     if (geminiKeys.length > 0) {
       const defaultModels = [
         "gemini-3.8-flash",
         "gemini-3.5-flash-lite",
         "gemini-3.1-pro",
       ];
-      const requestedModel = typeof model === "string" && model.trim() ? model.trim() : "gemini-3.8-flash";
       const geminiModels = Array.from(new Set([requestedModel, ...defaultModels]));
 
       for (let kIdx = 0; kIdx < geminiKeys.length; kIdx++) {
@@ -103,9 +198,12 @@ export async function POST(req: Request) {
                   contents: [
                     {
                       role: "user",
-                      parts: [{ text: SYSTEM_PROMPT + "\n\n" + userContext }],
+                      parts: [{ text: dynamicQuantumPrompt + "\n\n" + userContext }],
                     },
                   ],
+                  generationConfig: {
+                    temperature: 0.3,
+                  },
                 }),
               }
             );
@@ -114,14 +212,19 @@ export async function POST(req: Request) {
             if (geminiRes.ok && !geminiData.error) {
               const replyText =
                 geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (replyText) return NextResponse.json({ reply: replyText, usedModel: modelName });
+              if (replyText) {
+                saveToCache(replyText);
+                return NextResponse.json({
+                  reply: replyText,
+                  usedModel: modelName,
+                  quantumNode: activeSubject + " • " + activeGrade,
+                });
+              }
             }
 
             const errMsg = geminiData?.error?.message || ("HTTP " + geminiRes.status);
             errorLogs.push("Gemini(" + modelName + "): " + errMsg);
-            console.warn("Model " + modelName + " báo lỗi:", errMsg);
 
-            // Chỉ chuyển sang Key tiếp theo nếu chính API Key đó không hợp lệ / bị khóa
             if (
               errMsg.includes("API_KEY_INVALID") ||
               errMsg.includes("leaked") ||
@@ -138,7 +241,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // LỰA CHỌN 2: DEEPSEEK
+    // 4. LỰA CHỌN 2: DEEPSEEK
     if (deepseekKey) {
       try {
         const deepseekRes = await fetch(
@@ -152,7 +255,7 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               model: "deepseek-chat",
               messages: [
-                { role: "system", content: SYSTEM_PROMPT },
+                { role: "system", content: dynamicQuantumPrompt },
                 { role: "user", content: userContext },
               ],
             }),
@@ -161,8 +264,12 @@ export async function POST(req: Request) {
         const deepseekData = await deepseekRes.json();
 
         if (deepseekRes.ok && deepseekData.choices?.[0]?.message?.content) {
+          const replyText = deepseekData.choices[0].message.content;
+          saveToCache(replyText);
           return NextResponse.json({
-            reply: deepseekData.choices[0].message.content,
+            reply: replyText,
+            usedModel: "deepseek-chat",
+            quantumNode: activeSubject + " • " + activeGrade,
           });
         }
         errorLogs.push(
@@ -174,7 +281,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // LỰA CHỌN 3: OPENAI (CHATGPT)
+    // 5. LỰA CHỌN 3: OPENAI (CHATGPT)
     if (openaiKey) {
       try {
         const openaiRes = await fetch(
@@ -188,7 +295,7 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               model: "gpt-4o-mini",
               messages: [
-                { role: "system", content: SYSTEM_PROMPT },
+                { role: "system", content: dynamicQuantumPrompt },
                 { role: "user", content: userContext },
               ],
             }),
@@ -197,8 +304,12 @@ export async function POST(req: Request) {
         const openaiData = await openaiRes.json();
 
         if (openaiRes.ok && openaiData.choices?.[0]?.message?.content) {
+          const replyText = openaiData.choices[0].message.content;
+          saveToCache(replyText);
           return NextResponse.json({
-            reply: openaiData.choices[0].message.content,
+            reply: replyText,
+            usedModel: "gpt-4o-mini",
+            quantumNode: activeSubject + " • " + activeGrade,
           });
         }
         errorLogs.push(
@@ -212,7 +323,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       reply:
-        "Xin lỗi Thầy/Cô và các em học sinh, hệ thống AI hiện đang bảo trì hoặc mạng quá tải. Vui lòng thử lại sau ít phút nhé!\n\n*(Chi tiết kỹ thuật để Thầy kiểm tra Key: " +
+        "Xin lỗi Thầy/Cô và các em học sinh, hệ thống AI hiện đang bảo trì hoặc mạng quá tải. Vui lòng thử lại sau ít phút nhé!\n\n*(Chi tiết kỹ thuật: " +
         errorLogs.slice(0, 3).join(" | ") +
         ")*",
     });

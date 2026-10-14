@@ -80,27 +80,230 @@ declare global {
   }
 }
 
-const QUICK_PROMPTS = [
-  "Toán 12 (KNTT): Khảo sát và vẽ đồ thị hàm số y = x^3 - 3x + 1",
-  "Hóa 12 (KNTT): Viết phương trình thủy phân tinh bột thành glucose",
-  "Vật lí 12 (KNTT): Công thức định luật 1 nhiệt động lực học và ví dụ",
-  "Sinh 12 (KNTT): Giải bài tập quy luật phân li độc lập của Mendel",
-  "Ngữ văn 12 (KNTT): Dàn ý nghị luận xã hội 200 chữ về bản lĩnh tuổi trẻ",
-  "Tiếng Anh (Global Success): 5 câu trắc nghiệm phát âm -ed và -s/-es có giải thích",
+interface MessageMeta {
+  sender: "user" | "ai";
+  text: string;
+  nodeInfo?: string;
+  latencyMs?: number;
+}
+
+const SUBJECT_NODES = [
+  { id: "auto", label: "🌐 Tự động", color: "from-indigo-600 to-blue-600" },
+  { id: "toan", label: "📐 Toán", color: "from-blue-600 to-cyan-600" },
+  { id: "vatli", label: "⚡ Vật lí", color: "from-amber-500 to-orange-600" },
+  { id: "hoahoc", label: "🧪 Hóa học", color: "from-emerald-600 to-teal-600" },
+  { id: "sinhhoc", label: "🧬 Sinh học", color: "from-green-600 to-lime-600" },
+  { id: "khtn", label: "🔬 KHTN (6-9)", color: "from-purple-600 to-indigo-600" },
+  { id: "nguvan", label: "📖 Ngữ văn", color: "from-rose-600 to-pink-600" },
+  { id: "tienganh", label: "🇬🇧 Tiếng Anh", color: "from-sky-600 to-blue-700" },
 ];
 
+const GRADE_LIST = [
+  "Lớp 6",
+  "Lớp 7",
+  "Lớp 8",
+  "Lớp 9",
+  "Lớp 10",
+  "Lớp 11",
+  "Lớp 12",
+];
+
+// MA TRẬN GỢI Ý LƯỢNG TỬ THEO TỪNG MÔN & KHỐI LỚP (Bộ SGK Kết nối tri thức)
+const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
+  toan: {
+    "Lớp 6": [
+      "Tóm tắt lý thuyết và ví dụ bài Ước chung và Ước chung lớn nhất Toán 6 KNTT",
+      "Tìm ƯCLN và BCNN của 24, 36 và 60 có trình bày từng bước",
+      "Giải bài tập quy tắc dấu ngoặc và phép cộng trừ số nguyên Toán 6",
+    ],
+    "Lớp 7": [
+      "Lý thuyết và bài tập Áp dụng tính chất dãy tỉ số bằng nhau Toán 7 KNTT",
+      "Chứng minh hai tam giác bằng nhau theo trường hợp cạnh - góc - cạnh",
+      "Thu gọn và tìm nghiệm của đa thức một biến P(x) = 2x^2 - 5x + 3",
+    ],
+    "Lớp 8": [
+      "7 hằng đẳng thức đáng nhớ và bài tập phân tích đa thức thành nhân tử Toán 8",
+      "Áp dụng định lí Thalès tính độ dài đoạn thẳng trong tam giác kèm hình vẽ",
+      "Vẽ đồ thị hàm số bậc nhất y = 2x - 3 trên mặt phẳng tọa độ Oxy",
+    ],
+    "Lớp 9": [
+      "Khảo sát và vẽ đồ thị parabol y = x^2 và đường thẳng y = x + 2 trên cùng Oxy",
+      "Ứng dụng hệ thức Viète tìm tham số m trong phương trình bậc hai Toán 9",
+      "Bài tập tiếp tuyến của đường tròn và tứ giác nội tiếp ôn thi vào 10",
+    ],
+    "Lớp 10": [
+      "Khảo sát và vẽ đồ thị hàm số bậc hai y = x^2 - 4x + 3 Toán 10 KNTT",
+      "Giải tam giác bằng định lí Cosin và định lí Sin kèm hình minh họa",
+      "Viết phương trình tổng quát và tham số của đường thẳng trong mặt phẳng Oxy",
+    ],
+    "Lớp 11": [
+      "Tính giới hạn của dãy số và hàm số bằng quy tắc liên hợp Toán 11 KNTT",
+      "Chứng minh đường thẳng vuông góc với mặt phẳng trong hình chóp S.ABC kèm hình 3D",
+      "Giải phương trình mũ và lôgarit cơ bản Toán 11 Kết nối tri thức",
+    ],
+    "Lớp 12": [
+      "Khảo sát sự biến thiên và vẽ đồ thị hàm số y = x^3 - 3x + 1 Toán 12 KNTT",
+      "Tìm tiệm cận đứng và tiệm cận xiên của hàm số y = (x^2 + x - 1)/(x - 1)",
+      "Bài tập công thức xác suất toàn phần và công thức Bayes Toán 12 KNTT",
+    ],
+  },
+  hoahoc: {
+    "Lớp 6": ["Phân biệt chất tinh khiết và hỗn hợp đồng nhất, không đồng nhất KHTN 6"],
+    "Lớp 7": ["Cấu tạo nguyên tử, bảng tuần hoàn các nguyên tố hóa học và hóa trị KHTN 7"],
+    "Lớp 8": [
+      "Cách tính số mol, nồng độ phần trăm (C%) và nồng độ mol (CM) KHTN 8",
+      "Phân loại và gọi tên Oxide, Acid, Base, Muối theo danh pháp IUPAC chuẩn KNTT",
+    ],
+    "Lớp 9": [
+      "Tính chất hóa học của kim loại, dãy hoạt động hóa học KHTN 9 KNTT",
+      "Viết phương trình phản ứng của Ethanol và Acetic acid (tráng bạc, ester hóa)",
+    ],
+    "Lớp 10": [
+      "Cách cân bằng phương trình phản ứng oxi hóa - khử bằng phương pháp thăng bằng electron",
+      "Ý nghĩa và cách tính biến thiên enthalpy chuẩn của phản ứng hóa học Hóa 10 KNTT",
+    ],
+    "Lớp 11": [
+      "Khái niệm cân bằng hóa học, hằng số cân bằng Kc và nguyên lí Le Chatelier Hóa 11",
+      "Danh pháp thay thế và phản ứng thế halogen của Alkane, cộng vào Alkene Hóa 11 KNTT",
+    ],
+    "Lớp 12": [
+      "Viết phương trình thủy phân tinh bột (Starch) và Cellulose thành Glucose Hóa 12 KNTT",
+      "Phản ứng xà phòng hóa Ester và cấu tạo chất giặt rửa tổng hợp Hóa 12 KNTT",
+      "Cấu tạo, suất điện động chuẩn của Pin điện hóa Galvani Zn - Cu Hóa 12 KNTT",
+    ],
+  },
+  vatli: {
+    "Lớp 10": [
+      "Ba định luật Newton về chuyển động và bài tập phân tích lực Vật lí 10 KNTT",
+      "Định luật bảo toàn cơ năng (động năng và thế năng trọng trường) Vật lí 10",
+    ],
+    "Lớp 11": [
+      "Phương trình dao động điều hòa x = A cos(omega*t + phi) và cách tính vận tốc cực đại",
+      "Định luật Coulomb và cường độ điện trường của điện tích điểm Vật lí 11 KNTT",
+    ],
+    "Lớp 12": [
+      "Định luật I Nhiệt động lực học (Delta U = A + Q) và quy ước dấu Vật lí 12 KNTT",
+      "Phương trình trạng thái khí lí tưởng pV = nRT và các đẳng quá trình Vật lí 12",
+      "Cảm ứng từ, từ thông và định luật Faraday về cảm ứng điện từ Vật lí 12 KNTT",
+    ],
+  },
+  sinhhoc: {
+    "Lớp 10": [
+      "Cấu trúc không gian của phân tử DNA và bài tập tính số liên kết Hydrogen (H = 2A + 3G)",
+      "So sánh quá trình nguyên phân và giảm phân Sinh học 10 Kết nối tri thức",
+    ],
+    "Lớp 11": [
+      "Quá trình quang hợp ở thực vật C3, C4 và CAM Sinh học 11 Kết nối tri thức",
+      "Cơ chế truyền tin qua synapse và cung phản xạ ở động vật Sinh học 11",
+    ],
+    "Lớp 12": [
+      "Cơ chế tái bản DNA, phiên mã tạo mRNA và dịch mã tổng hợp chuỗi polypeptide Sinh 12",
+      "Giải bài tập quy luật phân li độc lập của Mendel và hoán vị gene Sinh 12 KNTT",
+      "Cấu trúc di truyền của quần thể ngẫu phối và định luật Hardy - Weinberg",
+    ],
+  },
+  khtn: {
+    "Lớp 6": [
+      "Cấu tạo tế bào nhân sơ, tế bào nhân thực và 5 giới sinh vật KHTN 6 KNTT",
+      "Lực tiếp xúc, lực không tiếp xúc, trọng lực và khối lượng KHTN 6 KNTT",
+    ],
+    "Lớp 7": [
+      "Tốc độ chuyển động, đồ thị quãng đường - thời gian và phản xạ ánh sáng KHTN 7",
+      "Quang hợp, hô hấp tế bào và trao đổi nước ở thực vật KHTN 7 KNTT",
+    ],
+    "Lớp 8": [
+      "Khối lượng riêng, áp suất chất lỏng, lực đẩy Archimedes và định luật đòn bẩy KHTN 8",
+      "Cấu tạo và chức năng các hệ cơ quan trong cơ thể người KHTN 8 KNTT",
+    ],
+    "Lớp 9": [
+      "Định luật Ohm, đoạn mạch nối tiếp - song song và công suất điện KHTN 9 KNTT",
+      "Hiện tượng khúc xạ ánh sáng, thấu kính hội tụ và thấu kính phân kì KHTN 9",
+    ],
+  },
+  nguvan: {
+    "Lớp 6": ["Dàn ý bài văn kể lại một trải nghiệm của bản thân Ngữ văn 6 Kết nối tri thức"],
+    "Lớp 7": ["Phân tích đặc điểm nhân vật trong truyện ngụ ngôn hoặc truyện khoa học viễn tưởng Văn 7"],
+    "Lớp 8": ["Cách phân tích một bài thơ Đường luật (thất ngôn bát cú) Ngữ văn 8 KNTT"],
+    "Lớp 9": ["Dàn ý đoạn văn nghị luận xã hội 200 chữ và phân tích tác phẩm văn học ôn thi vào 10"],
+    "Lớp 10": ["Phân tích đặc trưng thể loại Thần thoại, Sử thi và Thơ trữ tình Ngữ văn 10 KNTT"],
+    "Lớp 11": ["Lập dàn ý bài văn nghị luận về một vấn đề xã hội hoặc tác phẩm truyện thơ Văn 11 KNTT"],
+    "Lớp 12": [
+      "Dàn ý đoạn văn nghị luận xã hội 200 chữ về bản lĩnh tuổi trẻ trong kỷ nguyên AI",
+      "Dàn ý bài văn nghị luận 600 chữ phân tích đánh giá một tác phẩm thơ/truyện hiện đại Văn 12",
+    ],
+  },
+  tienganh: {
+    "Lớp 6": ["Tổng hợp từ vựng và ngữ pháp Thì hiện tại đơn & Hiện tại tiếp diễn Tiếng Anh 6 Global Success"],
+    "Lớp 7": ["Cách phát âm đuôi -ed, -s/-es kèm 5 câu trắc nghiệm có gạch chân giải thích chi tiết"],
+    "Lớp 8": ["Ngữ pháp Câu ghép (Compound sentences) và Động từ chỉ sự yêu ghét Tiếng Anh 8 Global Success"],
+    "Lớp 9": ["Tổng hợp Câu điều kiện, Câu ước (Wish) và Mệnh đề quan hệ ôn thi vào 10 Tiếng Anh 9"],
+    "Lớp 10": ["Câu bị động (Passive Voice), Thì hiện tại hoàn thành và Mệnh đề quan hệ Tiếng Anh 10 Global Success"],
+    "Lớp 11": ["Danh động từ (Gerunds), Phân từ hoàn thành và Câu chẻ (Cleft sentences) Tiếng Anh 11"],
+    "Lớp 12": [
+      "5 câu trắc nghiệm phát âm & trọng âm chuẩn đề thi Tốt nghiệp THPT Global Success 12",
+      "Bài tập sắp xếp đoạn hội thoại/lá thư (a-b-c-d-e) và đọc điền tờ rơi chuẩn format mới 2025-2026",
+    ],
+  },
+};
+
 export default function IChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<MessageMeta[]>([
     {
       sender: "ai",
-      text: "Xin chào! Em là Trợ lý AI của Điểm 10⁺ (chuẩn SGK Kết nối tri thức với cuộc sống từ Lớp 6 đến Lớp 12). Thầy/Cô hoặc các em học sinh cần soạn bài giảng, giải bài tập Toán, Lý, Hóa, Sinh, KHTN, Ngữ văn hay Tiếng Anh hôm nay?",
+      text: "Xin chào! Em là Trợ lý AI Lưới Lượng Tử của Điểm 10⁺ (chuẩn SGK Kết nối tri thức với cuộc sống từ Lớp 6 đến Lớp 12). Hãy chọn **Môn học** và **Khối lớp** trên thanh điều khiển để khóa tọa độ kiến thức và tăng tốc độ phản hồi gấp 3 lần!",
+      nodeInfo: "Hệ thống Lưới Lượng Tử Đa Vũ Trụ • Sẵn sàng",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gemini-3.8-flash");
+  const [selectedSubject, setSelectedSubject] = useState("auto");
+  const [selectedGrade, setSelectedGrade] = useState("Lớp 9");
   const [, setKatexTick] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const localQuantumCacheRef = useRef<Map<string, { reply: string; nodeInfo: string }>>(new Map());
+
+  // Tự động đồng bộ Khối lớp nếu học sinh đã đăng nhập trên thanh menu
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem("d10_user_profile");
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        if (parsed && parsed.grade) {
+          const gStr = String(parsed.grade);
+          const matchedGrade = GRADE_LIST.find((g) => gStr.includes(g));
+          if (matchedGrade) setSelectedGrade(matchedGrade);
+        }
+      }
+    } catch {
+      // Bỏ qua nếu chưa đăng nhập
+    }
+  }, []);
+
+  // Lấy danh sách gợi ý nhanh động theo đúng tọa độ [Môn học x Khối lớp]
+  const getActiveQuickPrompts = (): string[] => {
+    if (selectedSubject === "auto") {
+      return [
+        "Toán (" + selectedGrade + " KNTT): Tóm tắt kiến thức trọng tâm và 2 bài tập mẫu có lời giải",
+        "KHTN / Hóa (" + selectedGrade + " KNTT): Viết các phương trình hóa học trọng tâm trong chương trình",
+        "Vật lí (" + selectedGrade + " KNTT): Hệ thống công thức và bài tập tính toán áp dụng",
+        "Ngữ văn (" + selectedGrade + " KNTT): Lập dàn ý đoạn văn 200 chữ / bài văn nghị luận trọng tâm",
+        "Tiếng Anh (" + selectedGrade + " Global Success): 5 câu trắc nghiệm ngữ pháp & phát âm có giải thích",
+      ];
+    }
+    const subjMap = QUANTUM_PROMPTS_MATRIX[selectedSubject] || {};
+    const promptsForGrade = subjMap[selectedGrade];
+    if (promptsForGrade && promptsForGrade.length > 0) {
+      return promptsForGrade;
+    }
+    const subjLabel =
+      SUBJECT_NODES.find((s) => s.id === selectedSubject)?.label.replace(/^[^\s]+\s/, "") || "Môn học";
+    return [
+      subjLabel + " " + selectedGrade + " (KNTT): Tóm tắt lý thuyết trọng tâm và ví dụ minh họa",
+      "Soạn đề kiểm tra 15 phút môn " + subjLabel + " " + selectedGrade + " (Kết nối tri thức) có đáp án",
+      "Giải bài tập vận dụng cao môn " + subjLabel + " " + selectedGrade + " từng bước dễ hiểu",
+    ];
+  };
 
   useEffect(() => {
     if (!document.getElementById("katex-css")) {
@@ -1233,30 +1436,69 @@ export default function IChatPage() {
     if (!userMsg || loading) return;
 
     if (!customText) setInput("");
-    setMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
-    setLoading(true);
+    const activeSubjLabel =
+      SUBJECT_NODES.find((s) => s.id === selectedSubject)?.label || "🌐 Tự động";
 
-    let savedGrade = "";
-    try {
-      const savedProfile = localStorage.getItem("d10_user_profile");
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        if (parsed && parsed.grade) savedGrade = String(parsed.grade);
-      }
-    } catch {
-      // Bỏ qua nếu chưa đăng nhập
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "user",
+        text: userMsg,
+        nodeInfo: activeSubjLabel + " • " + selectedGrade,
+      },
+    ]);
+
+    // Kiểm tra Bộ nhớ đệm Lượng tử ngay trên trình duyệt (0ms)
+    const clientCacheKey =
+      selectedSubject + "|" + selectedGrade + "|" + selectedModel + "|" + userMsg.toLowerCase();
+    const cachedHit = localQuantumCacheRef.current.get(clientCacheKey);
+    if (cachedHit) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "ai",
+          text: cachedHit.reply,
+          nodeInfo: cachedHit.nodeInfo + " • ⚡ Cache Lượng Tử",
+          latencyMs: 5,
+        },
+      ]);
+      return;
     }
+
+    setLoading(true);
+    const startTime = performance.now();
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, grade: savedGrade, model: selectedModel }),
+        body: JSON.stringify({
+          message: userMsg,
+          grade: selectedGrade,
+          subject: selectedSubject,
+          model: selectedModel,
+        }),
       });
       const data = await res.json();
+      const elapsed = Math.round(performance.now() - startTime);
 
       if (data.reply) {
-        setMessages((prev) => [...prev, { sender: "ai", text: data.reply }]);
+        const nodeBadge =
+          (activeSubjLabel + " • " + selectedGrade) +
+          (data.usedModel ? " • " + data.usedModel : "");
+        localQuantumCacheRef.current.set(clientCacheKey, {
+          reply: data.reply,
+          nodeInfo: nodeBadge,
+        });
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "ai",
+            text: data.reply,
+            nodeInfo: nodeBadge,
+            latencyMs: elapsed,
+          },
+        ]);
       } else {
         setMessages((prev) => [
           ...prev,
@@ -1276,52 +1518,106 @@ export default function IChatPage() {
     }
   };
 
+  const activePrompts = getActiveQuickPrompts();
+  const currentSubjObj =
+    SUBJECT_NODES.find((s) => s.id === selectedSubject) || SUBJECT_NODES[0];
+
   return (
-    <div className="min-h-screen bg-[#f4f6f8] font-sans py-6 px-4 flex justify-center">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col h-[82vh]">
-        {/* HEADER */}
-        <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-4 text-white rounded-t-2xl flex items-center justify-between shadow-sm">
+    <div className="min-h-screen bg-[#f4f6f8] font-sans py-4 px-3 md:px-4 flex justify-center">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col h-[86vh]">
+        {/* HEADER LƯỚI LƯỢNG TỬ + MENU THẢ CHỌN KHỐI LỚP & MODEL */}
+        <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-indigo-700 p-3.5 md:p-4 text-white rounded-t-2xl flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-400 text-blue-900 rounded-full flex items-center justify-center font-black text-xl shadow-md">
+            <div className="w-10 h-10 bg-yellow-400 text-blue-900 rounded-full flex items-center justify-center font-black text-xl shadow-md shrink-0">
               10<sup className="text-xs -top-2">+</sup>
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight">
-                iChat - Trợ lý Hỏi đáp AI (Lớp 6 - 12)
+              <h1 className="font-bold text-base md:text-lg leading-tight flex items-center gap-2">
+                <span>iChat - Lưới Lượng Tử Đa Vũ Trụ</span>
+                <span className="hidden sm:inline-block text-[11px] bg-yellow-400/20 text-yellow-300 border border-yellow-300/40 px-2 py-0.5 rounded-full font-semibold">
+                  SGK Kết nối tri thức
+                </span>
               </h1>
-              <p className="text-xs text-blue-100 flex items-center gap-1.5">
+              <p className="text-xs text-blue-100 flex items-center gap-1.5 mt-0.5">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>{" "}
-                Chuẩn SGK Kết nối tri thức với cuộc sống • Hỗ trợ 24/7
+                Đang khóa tọa độ: <strong className="text-yellow-300">{currentSubjObj?.label} • {selectedGrade}</strong>
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* BỘ ĐIỀU KHIỂN MENU THẢ: CHỌN KHỐI LỚP (6 -> 12) & CẤP ĐỘ TƯ DUY GEMINI */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Menu thả chọn Khối lớp 6 -> 12 */}
+            <div className="flex items-center bg-white/15 hover:bg-white/25 border border-white/30 rounded-full px-3 py-1 transition">
+              <span className="text-[11px] text-blue-100 mr-1.5 font-medium">🎓 Khối:</span>
+              <select
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value)}
+                title="Chọn Khối lớp (Lớp 6 đến Lớp 12)"
+                className="bg-transparent text-yellow-300 text-xs font-extrabold focus:outline-none cursor-pointer"
+              >
+                {GRADE_LIST.map((g) => (
+                  <option key={g} value={g} className="text-gray-900 font-bold">
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Menu thả chọn Model Gemini */}
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
               title="Chọn cấp độ tư duy Gemini"
-              className="bg-blue-800/80 hover:bg-blue-900 text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-400/40 focus:outline-none cursor-pointer"
+              className="bg-blue-900/70 hover:bg-blue-950 text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-400/40 focus:outline-none cursor-pointer"
             >
-              <option value="gemini-3.5-flash-lite">⚡ 3.5 Flash-Lite (Nhanh nhất)</option>
-              <option value="gemini-3.8-flash">✨ 3.8 Flash (Trợ giúp toàn diện)</option>
-              <option value="gemini-3.1-pro">🧠 3.1 Pro (Suy luận nâng cao)</option>
-              <option value="gemini-4-argon">🚀 4 Argon (Nhiệm vụ phức tạp)</option>
+              <option value="gemini-3.5-flash-lite">⚡ 3.5 Flash-Lite (Siêu tốc)</option>
+              <option value="gemini-3.8-flash">✨ 3.8 Flash (Toàn diện)</option>
+              <option value="gemini-3.1-pro">🧠 3.1 Pro (Suy luận sâu)</option>
+              <option value="gemini-4-argon">🚀 4 Argon (Phức tạp)</option>
             </select>
           </div>
         </div>
 
-        {/* THANH GỢI Ý NHANH CÁC MÔN HỌC */}
-        <div className="px-4 py-2 bg-blue-50/60 border-b border-blue-100 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-          <span className="text-xs font-semibold text-blue-800 shrink-0">
-            Gợi ý nhanh:
+        {/* THANH NÚT BẤM CHỌN MÔN HỌC (QUANTUM SUBJECT NODES) */}
+        <div className="px-3.5 py-2.5 bg-slate-50 border-b border-gray-200 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap">
+          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mr-1 shrink-0">
+            Vũ trụ môn:
           </span>
-          {QUICK_PROMPTS.map((prompt, index) => (
+          {SUBJECT_NODES.map((subj) => {
+            const isActive = selectedSubject === subj.id;
+            return (
+              <button
+                key={subj.id}
+                type="button"
+                onClick={() => setSelectedSubject(subj.id)}
+                className={
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 shrink-0 flex items-center gap-1 " +
+                  (isActive
+                    ? "bg-gradient-to-r " +
+                      subj.color +
+                      " text-white shadow-md scale-[1.03]"
+                    : "bg-white text-gray-700 border border-gray-200 hover:border-blue-400 hover:text-blue-700")
+                }
+              >
+                {subj.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* THANH GỢI Ý NHANH ĐỘNG THEO ĐÚNG [MÔN HỌC x KHỐI LỚP] */}
+        <div className="px-3.5 py-2 bg-blue-50/60 border-b border-blue-100 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+          <span className="text-xs font-bold text-blue-900 shrink-0">
+            ⚡ Gợi ý ({selectedGrade}):
+          </span>
+          {activePrompts.map((prompt, index) => (
             <button
               key={index}
               type="button"
               onClick={() => handleSend(prompt)}
               disabled={loading}
-              className="text-xs bg-white hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 px-3 py-1 rounded-full transition shadow-2xs shrink-0 disabled:opacity-50"
+              className="text-xs bg-white hover:bg-blue-600 hover:text-white text-blue-800 border border-blue-200 px-3 py-1 rounded-full transition shadow-2xs shrink-0 disabled:opacity-50"
             >
               {prompt}
             </button>
@@ -1334,13 +1630,23 @@ export default function IChatPage() {
             <div
               key={idx}
               className={
-                "flex " +
-                (msg.sender === "user" ? "justify-end" : "justify-start")
+                "flex flex-col " +
+                (msg.sender === "user" ? "items-end" : "items-start")
               }
             >
+              {msg.nodeInfo && (
+                <div className="text-[11px] text-gray-400 mb-1 px-1 flex items-center gap-1.5">
+                  <span>{msg.nodeInfo}</span>
+                  {typeof msg.latencyMs === "number" && (
+                    <span className="text-emerald-600 font-semibold">
+                      • {(msg.latencyMs / 1000).toFixed(2)}s
+                    </span>
+                  )}
+                </div>
+              )}
               <div
                 className={
-                  "max-w-[85%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed " +
+                  "max-w-[88%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed " +
                   (msg.sender === "user"
                     ? "bg-blue-600 text-white rounded-br-none whitespace-pre-wrap"
                     : "bg-white text-gray-800 border border-gray-100 rounded-bl-none space-y-2")
@@ -1353,11 +1659,13 @@ export default function IChatPage() {
 
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-white border border-gray-100 rounded-2xl p-4 text-gray-400 text-sm flex items-center gap-2">
+              <div className="bg-white border border-blue-100 rounded-2xl p-4 text-blue-700 text-sm flex items-center gap-2 shadow-2xs">
                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                <span>iChat đang biên soạn câu trả lời...</span>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.15s]"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.3s]"></div>
+                <span>
+                  Đang giải tại nút <strong>{currentSubjObj?.label} • {selectedGrade}</strong>...
+                </span>
               </div>
             </div>
           )}
@@ -1365,7 +1673,7 @@ export default function IChatPage() {
         </div>
 
         {/* BẢNG NHẬP TIN NHẮN */}
-        <div className="p-4 bg-white border-t border-gray-100 rounded-b-2xl">
+        <div className="p-3.5 md:p-4 bg-white border-t border-gray-100 rounded-b-2xl">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1377,13 +1685,19 @@ export default function IChatPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi Toán, Lý, Hóa, Sinh, KHTN, Văn, Anh (Lớp 6 - 12) hoặc yêu cầu soạn bài..."
+              placeholder={
+                "Nhập câu hỏi " +
+                (currentSubjObj?.label.replace(/^[^\s]+\s/, "") || "bất kỳ") +
+                " (" +
+                selectedGrade +
+                " - SGK Kết nối tri thức) tại đây..."
+              }
               className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm md:text-base focus:outline-none focus:border-blue-600 transition"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2 shrink-0"
             >
               <span>Gửi</span>
               <svg
