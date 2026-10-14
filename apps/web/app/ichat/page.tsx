@@ -98,6 +98,7 @@ export default function IChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gemini-3.8-flash");
   const [, setKatexTick] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -1103,7 +1104,7 @@ export default function IChatPage() {
     );
 
     processed = processed.replace(
-      /(?:\\(?:text|mathrm|ce)\{[^{}]+\}|\\(?:d?frac)\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|\b[A-Z][a-z]?(?:_\{?\d+\}?|\^\{?[0-9+\-]+\}?)+)+/g,
+      /(?:\\(?:text|mathrm|ce)\{[^{}]+\}(?:_\{?[0-9a-zA-Z+\-]+\}?|\^\{?[0-9a-zA-Z+\-°]+\}?)*|\\(?:d?frac)\{[^{}]+\}\{[^{}]+\}|\\sqrt(?:\[[^\]\n]+\])?\{[^{}]+\}|(?:[A-Z][a-z]?(?:_\{?[0-9a-zA-Z+\-]+\}?|\^\{?[0-9a-zA-Z+\-°]+\}?)+)+)+/g,
       (match) => {
         if (match.includes("@@@")) return match;
         return saveBlock(renderMath(match, false));
@@ -1250,7 +1251,7 @@ export default function IChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, grade: savedGrade }),
+        body: JSON.stringify({ message: userMsg, grade: savedGrade, model: selectedModel }),
       });
       const data = await res.json();
 
@@ -1294,9 +1295,19 @@ export default function IChatPage() {
               </p>
             </div>
           </div>
-          <span className="bg-blue-800/60 text-xs px-3 py-1 rounded-full border border-blue-400/30">
-            10 Plus AI
-          </span>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              title="Chọn cấp độ tư duy Gemini"
+              className="bg-blue-800/80 hover:bg-blue-900 text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-400/40 focus:outline-none cursor-pointer"
+            >
+              <option value="gemini-3.5-flash-lite">⚡ 3.5 Flash-Lite (Nhanh nhất)</option>
+              <option value="gemini-3.8-flash">✨ 3.8 Flash (Trợ giúp toàn diện)</option>
+              <option value="gemini-3.1-pro">🧠 3.1 Pro (Suy luận nâng cao)</option>
+              <option value="gemini-4-argon">🚀 4 Argon (Nhiệm vụ phức tạp)</option>
+            </select>
+          </div>
         </div>
 
         {/* THANH GỢI Ý NHANH CÁC MÔN HỌC */}

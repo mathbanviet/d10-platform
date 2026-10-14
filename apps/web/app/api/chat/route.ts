@@ -46,9 +46,8 @@ function cleanKey(k: string | undefined): string {
 
 export async function POST(req: Request) {
   try {
-    const { message, grade } = await req.json();
+    const { message, grade, model } = await req.json();
 
-    // Thu thập tất cả các Gemini API Key có thể có và lọc bỏ trùng lặp
     const rawGeminiKeys = [
       process.env.GEMINI_API_KEY,
       process.env.GEMINI_API_KEY_4,
@@ -68,7 +67,7 @@ export async function POST(req: Request) {
     if (geminiKeys.length === 0 && !deepseekKey && !openaiKey) {
       return NextResponse.json({
         reply:
-          "⚠️ Hệ thống chưa nhận được API Key trên Vercel. Thầy vui lòng kiểm tra mục Settings -> Environment Variables trên Vercel (đảm bảo đã tích chọn cả Production và Preview) rồi Redeploy nhé!",
+          "⚠️ Hệ thống chưa nhận được API Key trên Vercel. Thầy vui lòng kiểm tra mục Settings -> Environment Variables trên Vercel rồi Redeploy nhé!",
       });
     }
 
@@ -78,13 +77,15 @@ export async function POST(req: Request) {
 
     const errorLogs: string[] = [];
 
-    // LỰA CHỌN 1: GOOGLE GEMINI (Tự động xoay vòng qua tất cả các Key và các Model)
+    // LỰA CHỌN 1: GOOGLE GEMINI (Hỗ trợ đầy đủ hệ sinh thái Gemini 4: 3.8 Flash, 3.5 Flash-Lite, 3.1 Pro, 4 Argon)
     if (geminiKeys.length > 0) {
-      const geminiModels = [
+      const defaultModels = [
         "gemini-3.8-flash",
         "gemini-3.5-flash-lite",
-        "gemini-2.5-flash",
+        "gemini-3.1-pro",
       ];
+      const requestedModel = typeof model === "string" && model.trim() ? model.trim() : "gemini-3.8-flash";
+      const geminiModels = Array.from(new Set([requestedModel, ...defaultModels]));
 
       for (let kIdx = 0; kIdx < geminiKeys.length; kIdx++) {
         const apiKey = geminiKeys[kIdx];
@@ -113,20 +114,19 @@ export async function POST(req: Request) {
             if (geminiRes.ok && !geminiData.error) {
               const replyText =
                 geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (replyText) return NextResponse.json({ reply: replyText });
+              if (replyText) return NextResponse.json({ reply: replyText, usedModel: modelName });
             }
 
             const errMsg = geminiData?.error?.message || ("HTTP " + geminiRes.status);
             errorLogs.push("Gemini(" + modelName + "): " + errMsg);
             console.warn("Model " + modelName + " báo lỗi:", errMsg);
 
-            // Nếu Key bị báo lỗi không hợp lệ hoặc bị khóa (API_KEY_INVALID / leaked), chuyển ngay sang Key tiếp theo
+            // Chỉ chuyển sang Key tiếp theo nếu chính API Key đó không hợp lệ / bị khóa
             if (
               errMsg.includes("API_KEY_INVALID") ||
               errMsg.includes("leaked") ||
               errMsg.includes("expired") ||
-              geminiRes.status === 400 ||
-              geminiRes.status === 403
+              errMsg.includes("PERMISSION_DENIED")
             ) {
               break;
             }
