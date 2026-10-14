@@ -1002,7 +1002,7 @@ export default function IChatPage() {
 
     const specialBlocks: string[] = [];
     const saveBlock = (html: string) => {
-      const id = "@@BLOCK_" + String(specialBlocks.length) + "@@";
+      const id = "@@@" + String(specialBlocks.length) + "@@@";
       specialBlocks.push(html);
       return id;
     };
@@ -1081,7 +1081,7 @@ export default function IChatPage() {
     processed = processed.replace(
       /^([^\n]*(?:\\xrightarrow|\\xrightleftharpoons)[^\n]*)$/gm,
       (line) => {
-        if (line.includes("@@BLOCK_")) return line;
+        if (line.includes("@@@")) return line;
         return (
           "\n" +
           saveBlock(
@@ -1097,15 +1097,15 @@ export default function IChatPage() {
     processed = processed.replace(
       /\(([^()\n]*\\(?:text|mathrm|ce|dfrac|frac|sqrt|rightarrow|to)[^()\n]*)\)/g,
       (_, innerTex) => {
-        if (String(innerTex).includes("@@BLOCK_")) return "(" + innerTex + ")";
+        if (String(innerTex).includes("@@@")) return "(" + innerTex + ")";
         return "(" + saveBlock(renderMath(String(innerTex), false)) + ")";
       }
     );
 
     processed = processed.replace(
-      /(?:\\(?:text|mathrm|ce)\{[^{}]+\}|\\(?:d?frac)\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|[A-Z][a-z]?(?:_\{?\d+\}?|\^\{?[0-9+\-]+}?)+)+/g,
+      /(?:\\(?:text|mathrm|ce)\{[^{}]+\}|\\(?:d?frac)\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|\b[A-Z][a-z]?(?:_\{?\d+\}?|\^\{?[0-9+\-]+\}?)+)+/g,
       (match) => {
-        if (match.includes("@@BLOCK_")) return match;
+        if (match.includes("@@@")) return match;
         return saveBlock(renderMath(match, false));
       }
     );
@@ -1209,10 +1209,14 @@ export default function IChatPage() {
     }
 
     return groupedBlocks.map((block, i) => {
-      const restoredBlock = block.replace(
-        /@@BLOCK_(\d+)@@/g,
-        (_, bIdx) => specialBlocks[Number(bIdx)] || ""
-      );
+      let restoredBlock = block;
+      for (let pass = 0; pass < 5; pass++) {
+        if (!/@@@(\d+)@@@/.test(restoredBlock)) break;
+        restoredBlock = restoredBlock.replace(
+          /@@@(\d+)@@@/g,
+          (_, bIdx) => specialBlocks[Number(bIdx)] || ""
+        );
+      }
       return (
         <div
           key={i}
