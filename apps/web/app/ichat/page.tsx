@@ -94,6 +94,7 @@ const SUBJECT_NODES = [
   { id: "hoahoc", label: "🧪 Hóa học", color: "from-emerald-600 to-teal-600" },
   { id: "sinhhoc", label: "🧬 Sinh học", color: "from-green-600 to-lime-600" },
   { id: "khtn", label: "🔬 KHTN (6-9)", color: "from-purple-600 to-indigo-600" },
+  { id: "tinhoc", label: "💻 Tin học", color: "from-cyan-600 to-blue-700" },
   { id: "nguvan", label: "📖 Ngữ văn", color: "from-rose-600 to-pink-600" },
   { id: "tienganh", label: "🇬🇧 Tiếng Anh", color: "from-sky-600 to-blue-700" },
 ];
@@ -106,6 +107,7 @@ const GRADE_LIST = [
   "Lớp 10",
   "Lớp 11",
   "Lớp 12",
+  "Giáo sư",
 ];
 
 // MA TRẬN GỢI Ý LƯỢNG TỬ THEO TỪNG MÔN & KHỐI LỚP (Bộ SGK Kết nối tri thức)
@@ -146,6 +148,11 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
       "Tìm tiệm cận đứng và tiệm cận xiên của hàm số y = (x^2 + x - 1)/(x - 1)",
       "Bài tập công thức xác suất toàn phần và công thức Bayes Toán 12 KNTT",
     ],
+    "Giáo sư": [
+      "Giáo sư Toán học: Giải phương trình hàm Olympic Quốc tế (IMO) và phân tích bản chất",
+      "Giáo sư Toán cao cấp: Bản chất hình học của Giá trị riêng, Vectơ riêng và Chuỗi Fourier",
+      "Giáo sư Toán ứng dụng: Mô hình phương trình vi phân ngẫu nhiên Black-Scholes trong tài chính",
+    ],
   },
   hoahoc: {
     "Lớp 6": ["Phân biệt chất tinh khiết và hỗn hợp đồng nhất, không đồng nhất KHTN 6"],
@@ -171,6 +178,11 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
       "Phản ứng xà phòng hóa Ester và cấu tạo chất giặt rửa tổng hợp Hóa 12 KNTT",
       "Cấu tạo, suất điện động chuẩn của Pin điện hóa Galvani Zn - Cu Hóa 12 KNTT",
     ],
+    "Giáo sư": [
+      "Giáo sư Hóa học: Cơ chế phản ứng hữu cơ nâng cao (SN1, SN2, E1, E2) và thuyết Orbital phân tử (MO)",
+      "Giáo sư Hóa lý: Nhiệt động lực học thống kê, năng lượng tự do Gibbs và động học xúc tác dị thể",
+      "Giáo sư Hóa sinh: Tổng hợp toàn phần hợp chất thiên nhiên và thiết kế thuốc phân tử đích",
+    ],
   },
   vatli: {
     "Lớp 10": [
@@ -186,6 +198,11 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
       "Phương trình trạng thái khí lí tưởng pV = nRT và các đẳng quá trình Vật lí 12",
       "Cảm ứng từ, từ thông và định luật Faraday về cảm ứng điện từ Vật lí 12 KNTT",
     ],
+    "Giáo sư": [
+      "Giáo sư Vật lí lượng tử: Phương trình Schrödinger, nguyên lý bất định Heisenberg và vướng víu lượng tử",
+      "Giáo sư Vũ trụ học: Thuyết tương đối rộng của Einstein, lỗ đen và bức xạ Hawking",
+      "Giáo sư Vật lí Olympic (IPhO): Cơ học giải tích Lagrange - Hamilton và điện động lực học Maxwell",
+    ],
   },
   sinhhoc: {
     "Lớp 10": [
@@ -200,6 +217,11 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
       "Cơ chế tái bản DNA, phiên mã tạo mRNA và dịch mã tổng hợp chuỗi polypeptide Sinh 12",
       "Giải bài tập quy luật phân li độc lập của Mendel và hoán vị gene Sinh 12 KNTT",
       "Cấu trúc di truyền của quần thể ngẫu phối và định luật Hardy - Weinberg",
+    ],
+    "Giáo sư": [
+      "Giáo sư Y Sinh & Di truyền: Công nghệ chỉnh sửa gene CRISPR-Cas9 và liệu pháp miễn dịch tế bào CAR-T",
+      "Giáo sư Sinh học phân tử (IBO): Cơ chế điều hòa biểu hiện gene Epigenetics và gấp cuộn protein",
+      "Giáo sư Thần kinh học: Cơ chế dẫn truyền điện thế hoạt động và mạng lưới nơ-ron não bộ",
     ],
   },
   khtn: {
@@ -219,6 +241,10 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
       "Định luật Ohm, đoạn mạch nối tiếp - song song và công suất điện KHTN 9 KNTT",
       "Hiện tượng khúc xạ ánh sáng, thấu kính hội tụ và thấu kính phân kì KHTN 9",
     ],
+    "Giáo sư": [
+      "Giáo sư Khoa học Tự nhiên: Liên ngành Vật lí - Hóa học - Sinh học về biến đổi khí hậu và năng lượng sạch",
+      "Giáo sư Khoa học Vật liệu: Vật liệu siêu dẫn, bán dẫn nano và pin thể rắn thế hệ mới",
+    ],
   },
   nguvan: {
     "Lớp 6": ["Dàn ý bài văn kể lại một trải nghiệm của bản thân Ngữ văn 6 Kết nối tri thức"],
@@ -231,6 +257,10 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
       "Dàn ý đoạn văn nghị luận xã hội 200 chữ về bản lĩnh tuổi trẻ trong kỷ nguyên AI",
       "Dàn ý bài văn nghị luận 600 chữ phân tích đánh giá một tác phẩm thơ/truyện hiện đại Văn 12",
     ],
+    "Giáo sư": [
+      "Giáo sư Văn học & Triết học: Thi pháp học hiện đại, phân tâm học và chủ nghĩa hiện sinh trong văn chương",
+      "Giáo sư Ngữ văn: Phân tích chiều sâu tư tưởng mỹ học phương Đông và phương Tây qua các kiệt tác Nobel Văn học",
+    ],
   },
   tienganh: {
     "Lớp 6": ["Tổng hợp từ vựng và ngữ pháp Thì hiện tại đơn & Hiện tại tiếp diễn Tiếng Anh 6 Global Success"],
@@ -242,6 +272,47 @@ const QUANTUM_PROMPTS_MATRIX: Record<string, Record<string, string[]>> = {
     "Lớp 12": [
       "5 câu trắc nghiệm phát âm & trọng âm chuẩn đề thi Tốt nghiệp THPT Global Success 12",
       "Bài tập sắp xếp đoạn hội thoại/lá thư (a-b-c-d-e) và đọc điền tờ rơi chuẩn format mới 2025-2026",
+    ],
+    "Giáo sư": [
+      "Giáo sư Ngôn ngữ học: Phân tích ngữ âm học, cú pháp học chuyên sâu và viết luận Academic Writing IELTS 9.0",
+      "Giáo sư Dịch thuật & Học thuật: Cách viết bài báo khoa học quốc tế (Q1/ISI/Scopus) bằng tiếng Anh chuẩn mực",
+    ],
+  },
+  tinhoc: {
+    "Lớp 6": [
+      "Tin học 6 (KNTT): Phân biệt Thông tin và Dữ liệu, cách đổi đơn vị lưu trữ Byte, KB, MB, GB",
+      "Tin học 6 (KNTT): Mô tả thuật toán bằng sơ đồ khối (cấu trúc tuần tự, rẽ nhánh, lặp)",
+      "Tin học 6 (KNTT): Cách tạo sơ đồ tư duy và định dạng văn bản trong Microsoft Word",
+    ],
+    "Lớp 7": [
+      "Tin học 7 (KNTT): Cách dùng các hàm SUM, AVERAGE, MAX, MIN, COUNT trong Excel kèm ví dụ",
+      "Tin học 7 (KNTT): Thuật toán tìm kiếm tuần tự, tìm kiếm nhị phân và sắp xếp nổi bọt, sắp xếp chọn",
+    ],
+    "Lớp 8": [
+      "Tin học 8 (KNTT): Phân biệt địa chỉ tương đối (A1) và địa chỉ tuyệt đối ($A$1) trong Excel",
+      "Tin học 8 (KNTT): Lập trình Scratch sử dụng biến, cấu trúc rẽ nhánh và vòng lặp vẽ hình đa giác đều",
+    ],
+    "Lớp 9": [
+      "Tin học 9 (KNTT): Cách dùng hàm COUNTIF, SUMIF và hàm điều kiện IF trong Excel kèm bài tập mẫu",
+      "Tin học 9 (KNTT): Các bước giải bài toán bằng máy tính và mô phỏng thuật toán trên Scratch/Python",
+    ],
+    "Lớp 10": [
+      "Tin học 10 (KNTT): Lập trình Python câu lệnh rẽ nhánh if-elif-else và vòng lặp for, while kèm code mẫu",
+      "Tin học 10 (KNTT): Các thao tác xử lý Danh sách (list), Xâu ký tự (str) và viết Hàm (def) trong Python",
+    ],
+    "Lớp 11": [
+      "Tin học 11 (KNTT): Câu lệnh truy vấn SQL (SELECT, FROM, WHERE, INNER JOIN, ORDER BY) trong Cơ sở dữ liệu",
+      "Tin học 11 (KNTT): Cài đặt thuật toán Tìm kiếm nhị phân và Sắp xếp chèn, Sắp xếp chọn bằng Python",
+    ],
+    "Lớp 12": [
+      "Tin học 12 (KNTT): Khái niệm Trí tuệ nhân tạo (AI) và Giao thức mạng TCP/IP, thiết bị mạng LAN/WAN",
+      "Tin học 12 (KNTT): Tạo trang web bằng HTML5 (thẻ văn bản, bảng, biểu mẫu form) và định dạng CSS3",
+      "Tin học 12 (KNTT): 5 câu trắc nghiệm Đúng/Sai môn Tin học ôn thi Tốt nghiệp THPT có giải thích",
+    ],
+    "Giáo sư": [
+      "Giáo sư Khoa học Máy tính & AI: Kiến trúc Transformer, cơ chế Self-Attention và thuật toán huấn luyện LLM",
+      "Giáo sư Thuật toán (IOI/ACM-ICPC): Quy hoạch động trạng thái, Luồng cực đại trên mạng và Cây phân đoạn (Segment Tree)",
+      "Giáo sư Hệ thống & Mật mã học: Máy tính lượng tử (Shor/Grover), mật mã hậu lượng tử và kiến trúc Microservices",
     ],
   },
 };
@@ -282,9 +353,19 @@ export default function IChatPage() {
 
   // Lấy danh sách gợi ý nhanh động theo đúng tọa độ [Môn học x Khối lớp]
   const getActiveQuickPrompts = (): string[] => {
+    if (selectedSubject === "auto" && selectedGrade === "Giáo sư") {
+      return [
+        "👑 Giáo sư (IQ Vô Cực): Giải thích nguyên lý Máy tính lượng tử và Trí tuệ nhân tạo đa vũ trụ từ gốc rễ",
+        "👑 Giáo sư Toán - Lý: Mối liên hệ giữa Giả thuyết Riemann, Số nguyên tố và Mức năng lượng Lượng tử",
+        "👑 Giáo sư Kinh tế & Chiến lược: Phân tích vĩ mô, Lý thuyết Trò chơi (Nash Equilibrium) và ứng dụng thực tiễn",
+        "👑 Giáo sư Y Sinh & Công nghệ: Cơ chế chỉnh sửa gene CRISPR-Cas9 và tương lai công nghệ trường thọ",
+        "👑 Giáo sư Bách khoa: Giải đáp chuyên sâu bất kỳ bài toán Olympic (IMO/IPhO/IChO/IOI) hoặc câu hỏi học thuật nào",
+      ];
+    }
     if (selectedSubject === "auto") {
       return [
         "Toán (" + selectedGrade + " KNTT): Tóm tắt kiến thức trọng tâm và 2 bài tập mẫu có lời giải",
+        "Tin học (" + selectedGrade + " KNTT): Tóm tắt lý thuyết và bài tập thực hành trọng tâm",
         "KHTN / Hóa (" + selectedGrade + " KNTT): Viết các phương trình hóa học trọng tâm trong chương trình",
         "Vật lí (" + selectedGrade + " KNTT): Hệ thống công thức và bài tập tính toán áp dụng",
         "Ngữ văn (" + selectedGrade + " KNTT): Lập dàn ý đoạn văn 200 chữ / bài văn nghị luận trọng tâm",
@@ -1251,6 +1332,29 @@ export default function IChatPage() {
       }
     );
 
+    // Tách khối mã nguồn Tin học (Python, SQL, HTML, CSS, Scratch, Excel...) giữ nguyên thụt lề
+    processed = processed.replace(
+      /\x60\x60\x60([a-zA-Z0-9_+\-]*)\s*\n([\s\S]*?)\x60\x60\x60/g,
+      (_, lang, codeContent) => {
+        const langLabel = String(lang || "code").toUpperCase();
+        const escapedCode = escapeHtml(String(codeContent).replace(/\s+$/, ""));
+        return (
+          "\n" +
+          saveBlock(
+            '<div class="my-3 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 text-slate-100 shadow-sm">' +
+              '<div class="px-3.5 py-1.5 bg-slate-800 text-[11px] font-mono font-bold text-cyan-300 border-b border-slate-700 flex justify-between items-center">' +
+              "<span>💻 " +
+              langLabel +
+              "</span><span>Điểm 10⁺ Code</span></div>" +
+              '<pre class="p-3.5 text-xs md:text-sm font-mono leading-relaxed overflow-x-auto whitespace-pre">' +
+              escapedCode +
+              "</pre></div>"
+          ) +
+          "\n"
+        );
+      }
+    );
+
     processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
       return (
         "\n" +
@@ -1558,7 +1662,7 @@ export default function IChatPage() {
               >
                 {GRADE_LIST.map((g) => (
                   <option key={g} value={g} className="text-gray-900 font-bold">
-                    {g}
+                    {g === "Giáo sư" ? "👑 Giáo sư (IQ Vô Cực)" : g}
                   </option>
                 ))}
               </select>
