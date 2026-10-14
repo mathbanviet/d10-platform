@@ -69,7 +69,7 @@ declare global {
     katex?: {
       renderToString: (
         tex: string,
-        options?: { displayMode?: boolean; throwOnError?: boolean }
+        options?: { displayMode?: boolean; throwOnError?: boolean; trust?: boolean }
       ) => string;
     };
   }
@@ -84,35 +84,46 @@ export default function IChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [katexReady, setKatexReady] = useState(false);
+  const [, setKatexReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Nạp KaTeX từ Cloudflare CDN (ưu tiên tốc độ cao tại VN) kèm dự phòng jsDelivr
   useEffect(() => {
     if (!document.getElementById("katex-css")) {
       const link = document.createElement("link");
       link.id = "katex-css";
       link.rel = "stylesheet";
-      link.href = "[https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css](https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css)";
+      link.href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css";
       document.head.appendChild(link);
     }
 
     if (window.katex) {
       setKatexReady(true);
-      return;
+    } else if (!document.getElementById("katex-js")) {
+      const script = document.createElement("script");
+      script.id = "katex-js";
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
+      script.async = true;
+      script.onload = () => setKatexReady(true);
+      script.onerror = () => {
+        const fallbackScript = document.createElement("script");
+        fallbackScript.src = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js";
+        fallbackScript.async = true;
+        fallbackScript.onload = () => setKatexReady(true);
+        document.head.appendChild(fallbackScript);
+      };
+      document.head.appendChild(script);
     }
 
-    const existingScript = document.getElementById("katex-js") as HTMLScriptElement | null;
-    if (existingScript) {
-      existingScript.addEventListener("load", () => setKatexReady(true));
-      return;
-    }
+    // Tự động kiểm tra liên tục cho đến khi window.katex sẵn sàng để vẽ lại công thức ngay lập tức
+    const timer = setInterval(() => {
+      if (window.katex) {
+        setKatexReady(true);
+        clearInterval(timer);
+      }
+    }, 250);
 
-    const script = document.createElement("script");
-    script.id = "katex-js";
-    script.src = "[https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js](https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js)";
-    script.async = true;
-    script.onload = () => setKatexReady(true);
-    document.head.appendChild(script);
+    return () => clearInterval(timer);
   }, []);
 
   const scrollToBottom = () => {
@@ -185,7 +196,6 @@ export default function IChatPage() {
         '<defs><marker id="arrow-oxy" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" /></marker></defs>'
       );
 
-      // Vẽ lưới tọa độ và số chia vạch
       for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
         const sx = toSvgX(x);
         svgParts.push(
@@ -196,7 +206,7 @@ export default function IChatPage() {
             '<line x1="' + sx + '" y1="' + (originY - 3) + '" x2="' + sx + '" y2="' + (originY + 3) + '" stroke="#374151" stroke-width="1.2" />'
           );
           svgParts.push(
-            '<text x="' + sx + '" y="' + (originY + 15) + '" font-size="11" fill="#4b5563" text-anchor="middle">' + x + '</text>'
+            '<text x="' + sx + '" y="' + (originY + 15) + '" font-size="11" fill="#4b5563" text-anchor="middle">' + x + "</text>"
           );
         }
       }
@@ -211,17 +221,16 @@ export default function IChatPage() {
             '<line x1="' + (originX - 3) + '" y1="' + sy + '" x2="' + (originX + 3) + '" y2="' + sy + '" stroke="#374151" stroke-width="1.2" />'
           );
           svgParts.push(
-            '<text x="' + (originX - 8) + '" y="' + (sy + 4) + '" font-size="11" fill="#4b5563" text-anchor="end">' + y + '</text>'
+            '<text x="' + (originX - 8) + '" y="' + (sy + 4) + '" font-size="11" fill="#4b5563" text-anchor="end">' + y + "</text>"
           );
         }
       }
 
-      // Vẽ trục Ox, Oy và gốc O
       svgParts.push(
         '<line x1="' + (pad - 10) + '" y1="' + originY + '" x2="' + (rightBound + 12) + '" y2="' + originY + '" stroke="#111827" stroke-width="1.6" />'
       );
       svgParts.push(
-        '<polygon points="' + (rightBound + 16) + ',' + originY + ' ' + (rightBound + 8) + ',' + (originY - 4) + ' ' + (rightBound + 8) + ',' + (originY + 4) + '" fill="#111827" />'
+        '<polygon points="' + (rightBound + 16) + "," + originY + " " + (rightBound + 8) + "," + (originY - 4) + " " + (rightBound + 8) + "," + (originY + 4) + '" fill="#111827" />'
       );
       svgParts.push(
         '<text x="' + (rightBound + 14) + '" y="' + (originY - 8) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
@@ -231,7 +240,7 @@ export default function IChatPage() {
         '<line x1="' + originX + '" y1="' + (bottomBound + 10) + '" x2="' + originX + '" y2="' + (pad - 12) + '" stroke="#111827" stroke-width="1.6" />'
       );
       svgParts.push(
-        '<polygon points="' + originX + ',' + (pad - 16) + ' ' + (originX - 4) + ',' + (pad - 8) + ' ' + (originX + 4) + ',' + (pad - 8) + '" fill="#111827" />'
+        '<polygon points="' + originX + "," + (pad - 16) + " " + (originX - 4) + "," + (pad - 8) + " " + (originX + 4) + "," + (pad - 8) + '" fill="#111827" />'
       );
       svgParts.push(
         '<text x="' + (originX + 10) + '" y="' + (pad - 6) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
@@ -240,7 +249,6 @@ export default function IChatPage() {
         '<text x="' + (originX - 10) + '" y="' + (originY + 15) + '" font-size="12" font-style="italic" font-weight="bold" fill="#111827">O</text>'
       );
 
-      // Vẽ đường tròn trên Oxy
       circles.forEach((c) => {
         const cx = toSvgX(c.x);
         const cy = toSvgY(c.y);
@@ -252,7 +260,6 @@ export default function IChatPage() {
         );
       });
 
-      // Vẽ đoạn thẳng / vectơ trên Oxy
       segments.forEach((seg) => {
         const x1 = toSvgX(seg.from[0] ?? 0);
         const y1 = toSvgY(seg.from[1] ?? 0);
@@ -265,7 +272,6 @@ export default function IChatPage() {
         );
       });
 
-      // Vẽ đường cong hàm số
       const colors = ["#2563eb", "#16a34a", "#dc2626"];
       const steps = 300;
       const ySpan = yMax - yMin;
@@ -305,7 +311,6 @@ export default function IChatPage() {
         }
       });
 
-      // Vẽ đường gióng nét đứt và các điểm đặc biệt
       points.forEach((pt) => {
         if (pt.x >= xMin && pt.x <= xMax && pt.y >= yMin && pt.y <= yMax) {
           const px = toSvgX(pt.x);
@@ -446,7 +451,6 @@ export default function IChatPage() {
         );
       }
 
-      // Ký hiệu góc vuông
       (config.rightAngles || []).forEach((ra) => {
         if (ra.length === 3) {
           const p1 = projectedPoints[ra[0] ?? ""];
@@ -487,7 +491,6 @@ export default function IChatPage() {
         }
       });
 
-      // Vẽ đường tròn hoặc elip
       (config.circles || []).forEach((c) => {
         const center = projectedPoints[c.center];
         if (center) {
@@ -502,7 +505,6 @@ export default function IChatPage() {
         }
       });
 
-      // Vẽ các cạnh nét liền / nét đứt
       (config.segments || []).forEach((seg) => {
         const pFrom = projectedPoints[seg.from];
         const pTo = projectedPoints[seg.to];
@@ -546,7 +548,6 @@ export default function IChatPage() {
         }
       });
 
-      // Vẽ các đỉnh và nhãn tên đỉnh
       const centerSvgX =
         ptValues.reduce((acc, p) => acc + toSvgX(p.x), 0) / ptValues.length;
       const centerSvgY =
@@ -595,7 +596,7 @@ export default function IChatPage() {
     }
   };
 
-  // Hàm định dạng văn bản, kẻ bảng, hiển thị LaTeX (\dfrac) và vẽ đồ thị/hình học
+  // Hàm định dạng văn bản, kẻ bảng, hiển thị LaTeX (\dfrac), phương trình Hóa học và vẽ đồ thị/hình học
   const formatAIMessage = (rawText: string) => {
     const escapeHtml = (str: string) =>
       str
@@ -611,7 +612,8 @@ export default function IChatPage() {
         .replace(/\\sum\b/g, "\\displaystyle\\sum")
         .replace(/\\int\b/g, "\\displaystyle\\int");
 
-      if (katexReady && window.katex) {
+      // Kiểm tra trực tiếp window.katex để luôn hiển thị KaTeX ngay khi thư viện tải xong
+      if (typeof window !== "undefined" && window.katex) {
         try {
           return window.katex
             .renderToString(cleanTex, {
@@ -623,24 +625,51 @@ export default function IChatPage() {
           // Dự phòng nếu biểu thức lỗi
         }
       }
-      const fallback = escapeHtml(cleanTex)
+
+      // Bộ hiển thị Toán & Hóa học dự phòng (xử lý đầy đủ \text{}, chỉ số dưới, số mũ, mũi tên phản ứng)
+      let fallback = escapeHtml(cleanTex);
+      // 1. Gỡ các lệnh định dạng chữ \text{...}, \mathrm{...}, \textbf{...} trước để không bị lồng ngoặc {}
+      for (let step = 0; step < 3; step++) {
+        fallback = fallback.replace(/\\(?:text|mathrm|textbf|textit|mathit|mathbf)\{([^{}]*)\}/g, "$1");
+      }
+      // 2. Xử lý mũi tên phản ứng hóa học \xrightarrow[dưới]{trên} và \xrightarrow{trên}
+      fallback = fallback
+        .replace(
+          /\\xrightarrow\[([^{}\]]*)\]\{([^{}]*)\}/g,
+          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] leading-tight px-1.5 border-b border-blue-900">$2</span><span class="text-[10px] leading-tight">$1</span></span><span class="-ml-1.5 mr-1">→</span>'
+        )
+        .replace(
+          /\\xrightarrow\{([^{}]*)\}/g,
+          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] leading-tight px-1.5 border-b border-blue-900">$1</span><span class="text-[8px] leading-none">&nbsp;</span></span><span class="-ml-1.5 mr-1">→</span>'
+        )
         .replace(/\\times/g, " × ")
         .replace(/\\div/g, " ÷ ")
         .replace(/\\cdot/g, " · ")
         .replace(/\\pm/g, " ± ")
-        .replace(/\\leq/g, " ≤ ")
-        .replace(/\\geq/g, " ≥ ")
-        .replace(/\\neq/g, " ≠ ")
-        .replace(/\\rightarrow|\\to/g, " → ")
-        .replace(/\\xrightarrow\{([^{}]*)\}/g, " —($1)→ ")
+        .replace(/\\leq|\\le/g, " ≤ ")
+        .replace(/\\geq|\\ge/g, " ≥ ")
+        .replace(/\\neq|\\ne/g, " ≠ ")
+        .replace(/\\approx/g, " ≈ ")
+        .replace(/\\infty/g, "∞")
+        .replace(/\\rightarrow|\\to|\\longrightarrow/g, " → ")
         .replace(/\\Rightarrow/g, " ⇒ ")
-        .replace(/\\Leftrightarrow/g, " ⇔ ")
+        .replace(/\\Leftrightarrow|\\iff/g, " ⇔ ")
+        .replace(/\\Delta/g, "Δ")
+        .replace(/\\pi/g, "π")
+        .replace(/\\alpha/g, "α")
+        .replace(/\\beta/g, "β")
+        .replace(/\\gamma/g, "γ")
         .replace(/\\LaTeX/g, "LaTeX")
         .replace(/\\d?frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)")
-        .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)");
+        .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)")
+        // 3. Chuyển đổi số mũ ^{...}, ^x và chỉ số dưới _{...}, _x (H₂O, C₆H₁₂O₆, t⁰)
+        .replace(/\^\{([^{}]+)\}/g, "<sup>$1</sup>")
+        .replace(/\^([0-9a-zA-Z+\-°]+)/g, "<sup>$1</sup>")
+        .replace(/\_\{([^{}]+)\}/g, "<sub>$1</sub>")
+        .replace(/\_([0-9a-zA-Z+\-]+)/g, "<sub>$1</sub>");
 
       return displayMode
-        ? '<div class="my-2 py-1.5 px-3 bg-blue-50/70 rounded-lg font-semibold text-blue-950 text-center">' + fallback + "</div>"
+        ? '<div class="my-2 py-2 px-3 bg-blue-50/70 rounded-lg font-semibold text-blue-950 text-center overflow-x-auto">' + fallback + "</div>"
         : '<span class="font-semibold text-blue-900">' + fallback + "</span>";
     };
 
@@ -651,7 +680,7 @@ export default function IChatPage() {
       return id;
     };
 
-    // 1. Tách khối vẽ đồ thị (dùng \x60 thay cho dấu backtick để tránh lỗi parser)
+    // 1. Tách khối vẽ đồ thị
     let processed = rawText.replace(/\x60\x60\x60graph\s*([\s\S]*?)\x60\x60\x60/gi, (_, json) => {
       const graphHtml = renderFunctionGraph(String(json));
       return graphHtml ? "\n" + saveBlock(graphHtml) + "\n" : "";
@@ -689,6 +718,16 @@ export default function IChatPage() {
     // Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
     processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveBlock(renderMath(String(tex), false)));
     processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveBlock(renderMath(String(tex), false)));
+
+    // 5. Tự động bắt các công thức Toán/Hóa mà AI quên bọc dấu $...$ (ví dụ: (\text{C}_6\text{H}_{12}\text{O}_6) hoặc dòng chứa \xrightarrow)
+    processed = processed.replace(/\(((?:\\text|\\mathrm|\\dfrac|\\frac|\\sqrt)[^()\n]+)\)/g, (_, tex) => {
+      return "(" + saveBlock(renderMath(String(tex), false)) + ")";
+    });
+
+    processed = processed.replace(/^([^\n]*\\xrightarrow[^\n]*)$/gm, (line) => {
+      if (line.includes("@@BLOCK_")) return line;
+      return "\n" + saveBlock('<div class="my-2 overflow-x-auto">' + renderMath(line, true) + "</div>") + "\n";
+    });
 
     // Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
     processed = processed
@@ -758,7 +797,7 @@ export default function IChatPage() {
       }
     }
 
-    // Khôi phục khối Đồ thị, Hình học 2D/3D và Công thức Toán vào từng dòng/bảng
+    // Khôi phục khối Đồ thị, Hình học 2D/3D và Công thức Toán/Hóa vào từng dòng/bảng
     return groupedBlocks.map((block, i) => {
       const restoredBlock = block.replace(/@@BLOCK_(\d+)@@/g, (_, bIdx) => specialBlocks[Number(bIdx)] || "");
       return (
