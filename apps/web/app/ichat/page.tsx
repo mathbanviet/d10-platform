@@ -1,3 +1,4 @@
+```tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -69,59 +70,84 @@ declare global {
     katex?: {
       renderToString: (
         tex: string,
-        options?: { displayMode?: boolean; throwOnError?: boolean; trust?: boolean }
+        options?: {
+          displayMode?: boolean;
+          throwOnError?: boolean;
+          strict?: boolean | string;
+          trust?: boolean;
+        }
       ) => string;
     };
   }
 }
 
+const QUICK_PROMPTS = [
+  "Toán 12 (KNTT): Khảo sát và vẽ đồ thị hàm số y = x^3 - 3x + 1",
+  "Hóa 12 (KNTT): Viết phương trình thủy phân tinh bột thành glucose",
+  "Vật lí 12 (KNTT): Công thức định luật 1 nhiệt động lực học và ví dụ",
+  "Sinh 12 (KNTT): Giải bài tập quy luật phân li độc lập của Mendel",
+  "Ngữ văn 12 (KNTT): Dàn ý nghị luận xã hội 200 chữ về bản lĩnh tuổi trẻ",
+  "Tiếng Anh (Global Success): 5 câu trắc nghiệm phát âm -ed và -s/-es có giải thích",
+];
+
 export default function IChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "ai",
-      text: "Xin chào! Em là Trợ lý AI của Điểm 10⁺. Thầy/Cô hoặc các em học sinh cần hỗ trợ giải bài tập hay tra cứu kiến thức gì hôm nay?",
+      text: "Xin chào! Em là Trợ lý AI của Điểm 10⁺ (chuẩn SGK Kết nối tri thức với cuộc sống từ Lớp 6 đến Lớp 12). Thầy/Cô hoặc các em học sinh cần soạn bài giảng, giải bài tập Toán, Lý, Hóa, Sinh, KHTN, Ngữ văn hay Tiếng Anh hôm nay?",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [, setKatexReady] = useState(false);
+  const [, setKatexTick] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Nạp KaTeX từ Cloudflare CDN (ưu tiên tốc độ cao tại VN) kèm dự phòng jsDelivr
+  // Nạp KaTeX + gói Hóa học mhchem từ Cloudflare CDN (ổn định và không bị chặn tại VN)
   useEffect(() => {
     if (!document.getElementById("katex-css")) {
       const link = document.createElement("link");
       link.id = "katex-css";
       link.rel = "stylesheet";
-      link.href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css";
+      link.href =
+        "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css";
       document.head.appendChild(link);
     }
 
+    const loadMhchem = () => {
+      if (!document.getElementById("katex-mhchem-js")) {
+        const mhchem = document.createElement("script");
+        mhchem.id = "katex-mhchem-js";
+        mhchem.src =
+          "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/mhchem.min.js";
+        mhchem.async = true;
+        mhchem.onload = () => setKatexTick((t) => t + 1);
+        document.head.appendChild(mhchem);
+      } else {
+        setKatexTick((t) => t + 1);
+      }
+    };
+
     if (window.katex) {
-      setKatexReady(true);
+      loadMhchem();
     } else if (!document.getElementById("katex-js")) {
       const script = document.createElement("script");
       script.id = "katex-js";
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js";
       script.async = true;
-      script.onload = () => setKatexReady(true);
-      script.onerror = () => {
-        const fallbackScript = document.createElement("script");
-        fallbackScript.src = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js";
-        fallbackScript.async = true;
-        fallbackScript.onload = () => setKatexReady(true);
-        document.head.appendChild(fallbackScript);
+      script.onload = () => {
+        setKatexTick((t) => t + 1);
+        loadMhchem();
       };
       document.head.appendChild(script);
     }
 
-    // Tự động kiểm tra liên tục cho đến khi window.katex sẵn sàng để vẽ lại công thức ngay lập tức
     const timer = setInterval(() => {
       if (window.katex) {
-        setKatexReady(true);
+        setKatexTick((t) => t + 1);
         clearInterval(timer);
       }
-    }, 250);
+    }, 300);
 
     return () => clearInterval(timer);
   }, []);
@@ -166,7 +192,8 @@ export default function IChatPage() {
     try {
       const config: GraphConfig = JSON.parse(jsonStr.trim());
       const expressions =
-        config.exprs || (config.expr && config.expr.trim() ? [config.expr] : ["x^2"]);
+        config.exprs ||
+        (config.expr && config.expr.trim() ? [config.expr] : ["x^2"]);
       const xRange = config.xRange || [-4, 4];
       const yRange = config.yRange || [-2, 6];
       const xMin = xRange[0] ?? -4;
@@ -186,7 +213,8 @@ export default function IChatPage() {
       const plotH = height - pad * 2;
 
       const toSvgX = (x: number) => pad + ((x - xMin) / (xMax - xMin)) * plotW;
-      const toSvgY = (y: number) => bottomBound - ((y - yMin) / (yMax - yMin)) * plotH;
+      const toSvgY = (y: number) =>
+        bottomBound - ((y - yMin) / (yMax - yMin)) * plotH;
 
       const originX = Math.min(Math.max(toSvgX(0), pad), rightBound);
       const originY = Math.min(Math.max(toSvgY(0), pad), bottomBound);
@@ -199,14 +227,36 @@ export default function IChatPage() {
       for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
         const sx = toSvgX(x);
         svgParts.push(
-          '<line x1="' + sx + '" y1="' + pad + '" x2="' + sx + '" y2="' + bottomBound + '" stroke="#e5e7eb" stroke-width="1" />'
+          '<line x1="' +
+            sx +
+            '" y1="' +
+            pad +
+            '" x2="' +
+            sx +
+            '" y2="' +
+            bottomBound +
+            '" stroke="#e5e7eb" stroke-width="1" />'
         );
         if (x !== 0) {
           svgParts.push(
-            '<line x1="' + sx + '" y1="' + (originY - 3) + '" x2="' + sx + '" y2="' + (originY + 3) + '" stroke="#374151" stroke-width="1.2" />'
+            '<line x1="' +
+              sx +
+              '" y1="' +
+              (originY - 3) +
+              '" x2="' +
+              sx +
+              '" y2="' +
+              (originY + 3) +
+              '" stroke="#374151" stroke-width="1.2" />'
           );
           svgParts.push(
-            '<text x="' + sx + '" y="' + (originY + 15) + '" font-size="11" fill="#4b5563" text-anchor="middle">' + x + "</text>"
+            '<text x="' +
+              sx +
+              '" y="' +
+              (originY + 15) +
+              '" font-size="11" fill="#4b5563" text-anchor="middle">' +
+              x +
+              "</text>"
           );
         }
       }
@@ -214,39 +264,113 @@ export default function IChatPage() {
       for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
         const sy = toSvgY(y);
         svgParts.push(
-          '<line x1="' + pad + '" y1="' + sy + '" x2="' + rightBound + '" y2="' + sy + '" stroke="#e5e7eb" stroke-width="1" />'
+          '<line x1="' +
+            pad +
+            '" y1="' +
+            sy +
+            '" x2="' +
+            rightBound +
+            '" y2="' +
+            sy +
+            '" stroke="#e5e7eb" stroke-width="1" />'
         );
         if (y !== 0) {
           svgParts.push(
-            '<line x1="' + (originX - 3) + '" y1="' + sy + '" x2="' + (originX + 3) + '" y2="' + sy + '" stroke="#374151" stroke-width="1.2" />'
+            '<line x1="' +
+              (originX - 3) +
+              '" y1="' +
+              sy +
+              '" x2="' +
+              (originX + 3) +
+              '" y2="' +
+              sy +
+              '" stroke="#374151" stroke-width="1.2" />'
           );
           svgParts.push(
-            '<text x="' + (originX - 8) + '" y="' + (sy + 4) + '" font-size="11" fill="#4b5563" text-anchor="end">' + y + "</text>"
+            '<text x="' +
+              (originX - 8) +
+              '" y="' +
+              (sy + 4) +
+              '" font-size="11" fill="#4b5563" text-anchor="end">' +
+              y +
+              "</text>"
           );
         }
       }
 
       svgParts.push(
-        '<line x1="' + (pad - 10) + '" y1="' + originY + '" x2="' + (rightBound + 12) + '" y2="' + originY + '" stroke="#111827" stroke-width="1.6" />'
+        '<line x1="' +
+          (pad - 10) +
+          '" y1="' +
+          originY +
+          '" x2="' +
+          (rightBound + 12) +
+          '" y2="' +
+          originY +
+          '" stroke="#111827" stroke-width="1.6" />'
       );
       svgParts.push(
-        '<polygon points="' + (rightBound + 16) + "," + originY + " " + (rightBound + 8) + "," + (originY - 4) + " " + (rightBound + 8) + "," + (originY + 4) + '" fill="#111827" />'
+        '<polygon points="' +
+          (rightBound + 16) +
+          "," +
+          originY +
+          " " +
+          (rightBound + 8) +
+          "," +
+          (originY - 4) +
+          " " +
+          (rightBound + 8) +
+          "," +
+          (originY + 4) +
+          '" fill="#111827" />'
       );
       svgParts.push(
-        '<text x="' + (rightBound + 14) + '" y="' + (originY - 8) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
+        '<text x="' +
+          (rightBound + 14) +
+          '" y="' +
+          (originY - 8) +
+          '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
       );
 
       svgParts.push(
-        '<line x1="' + originX + '" y1="' + (bottomBound + 10) + '" x2="' + originX + '" y2="' + (pad - 12) + '" stroke="#111827" stroke-width="1.6" />'
+        '<line x1="' +
+          originX +
+          '" y1="' +
+          (bottomBound + 10) +
+          '" x2="' +
+          originX +
+          '" y2="' +
+          (pad - 12) +
+          '" stroke="#111827" stroke-width="1.6" />'
       );
       svgParts.push(
-        '<polygon points="' + originX + "," + (pad - 16) + " " + (originX - 4) + "," + (pad - 8) + " " + (originX + 4) + "," + (pad - 8) + '" fill="#111827" />'
+        '<polygon points="' +
+          originX +
+          "," +
+          (pad - 16) +
+          " " +
+          (originX - 4) +
+          "," +
+          (pad - 8) +
+          " " +
+          (originX + 4) +
+          "," +
+          (pad - 8) +
+          '" fill="#111827" />'
       );
       svgParts.push(
-        '<text x="' + (originX + 10) + '" y="' + (pad - 6) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
+        '<text x="' +
+          (originX + 10) +
+          '" y="' +
+          (pad - 6) +
+          '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
       );
       svgParts.push(
-        '<text x="' + (originX - 10) + '" y="' + (originY + 15) + '" font-size="12" font-style="italic" font-weight="bold" fill="#111827">O</text>'
+        '<text x="' +
+          (originX - 10) +
+          '" y="' +
+          (originY + 15) +
+          '" font-size="12" font-style="italic" font-weight="bold" fill="#111827">O</text>'
       );
 
       circles.forEach((c) => {
@@ -256,7 +380,17 @@ export default function IChatPage() {
         const ry = Math.abs(toSvgY(c.y + c.r) - cy);
         const dash = c.style === "dashed" ? ' stroke-dasharray="5 4"' : "";
         svgParts.push(
-          '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="#2563eb" stroke-width="2"' + dash + " />"
+          '<ellipse cx="' +
+            cx +
+            '" cy="' +
+            cy +
+            '" rx="' +
+            rx +
+            '" ry="' +
+            ry +
+            '" fill="none" stroke="#2563eb" stroke-width="2"' +
+            dash +
+            " />"
         );
       });
 
@@ -268,7 +402,18 @@ export default function IChatPage() {
         const dash = seg.style === "dashed" ? ' stroke-dasharray="5 4"' : "";
         const marker = seg.vector ? ' marker-end="url(#arrow-oxy)"' : "";
         svgParts.push(
-          '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#2563eb" stroke-width="2"' + dash + marker + " />"
+          '<line x1="' +
+            x1 +
+            '" y1="' +
+            y1 +
+            '" x2="' +
+            x2 +
+            '" y2="' +
+            y2 +
+            '" stroke="#2563eb" stroke-width="2"' +
+            dash +
+            marker +
+            " />"
         );
       });
 
@@ -293,7 +438,11 @@ export default function IChatPage() {
           ) {
             const sx = toSvgX(x).toFixed(2);
             const sy = toSvgY(y).toFixed(2);
-            if (drawing && Number.isFinite(prevY) && Math.abs(y - prevY) > ySpan * 0.8) {
+            if (
+              drawing &&
+              Number.isFinite(prevY) &&
+              Math.abs(y - prevY) > ySpan * 0.8
+            ) {
               drawing = false;
             }
             pathD += drawing ? " L " + sx + " " + sy : "M " + sx + " " + sy;
@@ -306,7 +455,11 @@ export default function IChatPage() {
 
         if (pathD) {
           svgParts.push(
-            '<path d="' + pathD + '" fill="none" stroke="' + color + '" stroke-width="2.4" stroke-linecap="round" />'
+            '<path d="' +
+              pathD +
+              '" fill="none" stroke="' +
+              color +
+              '" stroke-width="2.4" stroke-linecap="round" />'
           );
         }
       });
@@ -318,18 +471,44 @@ export default function IChatPage() {
 
           if (pt.x !== 0 && pt.y !== 0) {
             svgParts.push(
-              '<line x1="' + px + '" y1="' + py + '" x2="' + px + '" y2="' + originY + '" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />'
+              '<line x1="' +
+                px +
+                '" y1="' +
+                py +
+                '" x2="' +
+                px +
+                '" y2="' +
+                originY +
+                '" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />'
             );
             svgParts.push(
-              '<line x1="' + px + '" y1="' + py + '" x2="' + originX + '" y2="' + py + '" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />'
+              '<line x1="' +
+                px +
+                '" y1="' +
+                py +
+                '" x2="' +
+                originX +
+                '" y2="' +
+                py +
+                '" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3" />'
             );
           }
           svgParts.push(
-            '<circle cx="' + px + '" cy="' + py + '" r="4" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />'
+            '<circle cx="' +
+              px +
+              '" cy="' +
+              py +
+              '" r="4" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />'
           );
           if (pt.label) {
             svgParts.push(
-              '<text x="' + (px + 6) + '" y="' + (py - 6) + '" font-size="12" font-weight="bold" fill="#1e3a8a">' + pt.label + "</text>"
+              '<text x="' +
+                (px + 6) +
+                '" y="' +
+                (py - 6) +
+                '" font-size="12" font-weight="bold" fill="#1e3a8a">' +
+                pt.label +
+                "</text>"
             );
           }
         }
@@ -337,7 +516,8 @@ export default function IChatPage() {
 
       const firstExpr = expressions[0] ?? "";
       const titleLabel =
-        config.label || (firstExpr ? "Đồ thị hàm số y = " + firstExpr : "Hệ trục tọa độ Oxy");
+        config.label ||
+        (firstExpr ? "Đồ thị hàm số y = " + firstExpr : "Hệ trục tọa độ Oxy");
 
       return (
         '<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex flex-col items-center">' +
@@ -432,22 +612,58 @@ export default function IChatPage() {
         const axY = project([0, 4.5, 0]);
         const axZ = project([0, 0, 4.5]);
         svgParts.push(
-          '<line x1="' + toSvgX(o.x) + '" y1="' + toSvgY(o.y) + '" x2="' + toSvgX(axX.x) + '" y2="' + toSvgY(axX.y) + '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
+          '<line x1="' +
+            toSvgX(o.x) +
+            '" y1="' +
+            toSvgY(o.y) +
+            '" x2="' +
+            toSvgX(axX.x) +
+            '" y2="' +
+            toSvgY(axX.y) +
+            '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
         );
         svgParts.push(
-          '<text x="' + (toSvgX(axX.x) - 10) + '" y="' + (toSvgY(axX.y) + 14) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
+          '<text x="' +
+            (toSvgX(axX.x) - 10) +
+            '" y="' +
+            (toSvgY(axX.y) + 14) +
+            '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">x</text>'
         );
         svgParts.push(
-          '<line x1="' + toSvgX(o.x) + '" y1="' + toSvgY(o.y) + '" x2="' + toSvgX(axY.x) + '" y2="' + toSvgY(axY.y) + '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
+          '<line x1="' +
+            toSvgX(o.x) +
+            '" y1="' +
+            toSvgY(o.y) +
+            '" x2="' +
+            toSvgX(axY.x) +
+            '" y2="' +
+            toSvgY(axY.y) +
+            '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
         );
         svgParts.push(
-          '<text x="' + (toSvgX(axY.x) + 8) + '" y="' + (toSvgY(axY.y) + 4) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
+          '<text x="' +
+            (toSvgX(axY.x) + 8) +
+            '" y="' +
+            (toSvgY(axY.y) + 4) +
+            '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">y</text>'
         );
         svgParts.push(
-          '<line x1="' + toSvgX(o.x) + '" y1="' + toSvgY(o.y) + '" x2="' + toSvgX(axZ.x) + '" y2="' + toSvgY(axZ.y) + '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
+          '<line x1="' +
+            toSvgX(o.x) +
+            '" y1="' +
+            toSvgY(o.y) +
+            '" x2="' +
+            toSvgX(axZ.x) +
+            '" y2="' +
+            toSvgY(axZ.y) +
+            '" stroke="#4b5563" stroke-width="1.4" marker-end="url(#axis-arrow)" />'
         );
         svgParts.push(
-          '<text x="' + (toSvgX(axZ.x) + 8) + '" y="' + (toSvgY(axZ.y) + 4) + '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">z</text>'
+          '<text x="' +
+            (toSvgX(axZ.x) + 8) +
+            '" y="' +
+            (toSvgY(axZ.y) + 4) +
+            '" font-size="13" font-style="italic" font-weight="bold" fill="#111827">z</text>'
         );
       }
 
@@ -500,7 +716,17 @@ export default function IChatPage() {
           const ry = (c.ry || c.r || 1) * scale;
           const dash = c.style === "dashed" ? ' stroke-dasharray="6 4"' : "";
           svgParts.push(
-            '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="#1e40af" stroke-width="1.8"' + dash + " />"
+            '<ellipse cx="' +
+              cx +
+              '" cy="' +
+              cy +
+              '" rx="' +
+              rx +
+              '" ry="' +
+              ry +
+              '" fill="none" stroke="#1e40af" stroke-width="1.8"' +
+              dash +
+              " />"
           );
         }
       });
@@ -542,7 +768,13 @@ export default function IChatPage() {
             const mx = (x1 + x2) / 2;
             const my = (y1 + y2) / 2 - 6;
             svgParts.push(
-              '<text x="' + mx + '" y="' + my + '" font-size="11" fill="#be123c" font-weight="bold" text-anchor="middle">' + seg.label + "</text>"
+              '<text x="' +
+                mx +
+                '" y="' +
+                my +
+                '" font-size="11" fill="#be123c" font-weight="bold" text-anchor="middle">' +
+                seg.label +
+                "</text>"
             );
           }
         }
@@ -596,7 +828,7 @@ export default function IChatPage() {
     }
   };
 
-  // Hàm định dạng văn bản, kẻ bảng, hiển thị LaTeX (\dfrac), phương trình Hóa học và vẽ đồ thị/hình học
+  // 3. BỘ XỬ LÝ CÔNG THỨC TOÁN - LÝ - HÓA - SINH & ĐỊNH DẠNG ĐA MÔN HỌC
   const formatAIMessage = (rawText: string) => {
     const escapeHtml = (str: string) =>
       str
@@ -604,73 +836,181 @@ export default function IChatPage() {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 
-    const renderMath = (tex: string, displayMode: boolean) => {
-      const cleanTex = tex
-        .trim()
-        .replace(/\\frac\b/g, "\\dfrac")
-        .replace(/\\lim\b/g, "\\displaystyle\\lim")
-        .replace(/\\sum\b/g, "\\displaystyle\\sum")
-        .replace(/\\int\b/g, "\\displaystyle\\int");
+    // Bộ chuyển đổi công thức Toán - Lý - Hóa - Sinh sang HTML đẹp mắt (kể cả khi không có CDN hoặc ngoặc lồng nhau)
+    const convertLatexToRichHtml = (inputTex: string): string => {
+      let s = escapeHtml(inputTex.trim());
 
-      // Kiểm tra trực tiếp window.katex để luôn hiển thị KaTeX ngay khi thư viện tải xong
-      if (typeof window !== "undefined" && window.katex) {
-        try {
-          return window.katex
-            .renderToString(cleanTex, {
-              displayMode,
-              throwOnError: false,
-            })
-            .replace(/\r?\n/g, " ");
-        } catch {
-          // Dự phòng nếu biểu thức lỗi
-        }
+      // Bước 1: Gỡ nhiều tầng các lệnh bọc chữ \text{...}, \mathrm{...}, \ce{...}, \textbf{...}
+      for (let i = 0; i < 5; i++) {
+        s = s.replace(
+          /\\(?:text|mathrm|textbf|textit|mathit|mathbf|ce|pu)\{([^{}]*)\}/g,
+          "$1"
+        );
       }
 
-      // Bộ hiển thị Toán & Hóa học dự phòng (xử lý đầy đủ \text{}, chỉ số dưới, số mũ, mũi tên phản ứng)
-      let fallback = escapeHtml(cleanTex);
-      // 1. Gỡ các lệnh định dạng chữ \text{...}, \mathrm{...}, \textbf{...} trước để không bị lồng ngoặc {}
-      for (let step = 0; step < 3; step++) {
-        fallback = fallback.replace(/\\(?:text|mathrm|textbf|textit|mathit|mathbf)\{([^{}]*)\}/g, "$1");
-      }
-      // 2. Xử lý mũi tên phản ứng hóa học \xrightarrow[dưới]{trên} và \xrightarrow{trên}
-      fallback = fallback
+      // Bước 2: Chuẩn hóa ký hiệu độ (t^o, ^\circ) TRƯỚC khi dựng mũi tên
+      s = s
+        .replace(/\^\{?\s*\\circ\s*\}?/g, "°")
+        .replace(/\bt\^\{?o\}?\b/g, "t°")
+        .replace(/\\degree/g, "°");
+
+      // Bước 3: Dựng mũi tên phản ứng hóa học \xrightarrow[dưới]{trên} và \xrightarrow{trên}
+      s = s
         .replace(
           /\\xrightarrow\[([^{}\]]*)\]\{([^{}]*)\}/g,
-          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] leading-tight px-1.5 border-b border-blue-900">$2</span><span class="text-[10px] leading-tight">$1</span></span><span class="-ml-1.5 mr-1">→</span>'
+          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] font-medium text-blue-900 leading-tight px-2 border-b-[1.5px] border-blue-800">$2</span><span class="text-[10px] text-gray-600 leading-tight">$1</span></span><span class="-ml-2 mr-1 text-blue-900 font-bold">►</span>'
         )
         .replace(
           /\\xrightarrow\{([^{}]*)\}/g,
-          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] leading-tight px-1.5 border-b border-blue-900">$1</span><span class="text-[8px] leading-none">&nbsp;</span></span><span class="-ml-1.5 mr-1">→</span>'
+          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] font-medium text-blue-900 leading-tight px-2 border-b-[1.5px] border-blue-800">$1</span><span class="text-[7px] leading-none">&nbsp;</span></span><span class="-ml-2 mr-1 text-blue-900 font-bold">►</span>'
         )
+        .replace(
+          /\\xrightleftharpoons(?:\[([^{}\]]*)\])?\{([^{}]*)\}/g,
+          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] font-medium text-blue-900 leading-tight px-1.5">$2</span><span class="text-sm leading-none text-blue-900">⇌</span></span>'
+        )
+        .replace(
+          /\\overset\{([^{}]*)\}\{\\(?:longrightarrow|rightarrow|to)\}/g,
+          '<span class="inline-flex flex-col items-center align-middle mx-1.5"><span class="text-[11px] font-medium text-blue-900 leading-tight px-2 border-b-[1.5px] border-blue-800">$1</span><span class="text-[7px] leading-none">&nbsp;</span></span><span class="-ml-2 mr-1 text-blue-900 font-bold">►</span>'
+        );
+
+      // Bước 4: Dựng phân số thẳng đứng chuẩn \dfrac{tử}{mẫu} (hỗ trợ phân số lồng nhau)
+      for (let i = 0; i < 3; i++) {
+        s = s.replace(
+          /\\(?:d?frac|tfrac)\{([^{}]+)\}\{([^{}]+)\}/g,
+          '<span class="inline-flex flex-col items-center align-middle mx-1 text-[0.95em] leading-tight"><span class="border-b border-current px-1 pb-0.5">$1</span><span class="px-1 pt-0.5">$2</span></span>'
+        );
+      }
+
+      // Bước 5: Dựng căn bậc hai / bậc n và vectơ / góc
+      for (let i = 0; i < 2; i++) {
+        s = s
+          .replace(
+            /\\sqrt\[([^{}\]]+)\]\{([^{}]+)\}/g,
+            '<sup class="text-[10px]">$1</sup>√<span class="border-t border-current px-0.5">$2</span>'
+          )
+          .replace(
+            /\\sqrt\{([^{}]+)\}/g,
+            '√<span class="border-t border-current px-0.5">$1</span>'
+          )
+          .replace(
+            /\\(?:overrightarrow|vec)\{([^{}]+)\}/g,
+            '<span class="inline-block border-t border-current leading-none pt-0.5">$1</span>'
+          )
+          .replace(/\\widehat\{([^{}]+)\}/g, "∠$1")
+          .replace(/\\underline\{([^{}]+)\}/g, "<u>$1</u>");
+      }
+
+      // Bước 6: Thay thế các toán tử Toán - Lý - Hóa - Sinh phổ biến
+      s = s
+        .replace(/\\displaystyle/g, "")
+        .replace(/\\left\s*([(\[\{|])/g, "$1")
+        .replace(/\\right\s*([)\]\}|])/g, "$1")
         .replace(/\\times/g, " × ")
         .replace(/\\div/g, " ÷ ")
         .replace(/\\cdot/g, " · ")
         .replace(/\\pm/g, " ± ")
+        .replace(/\\mp/g, " ∓ ")
         .replace(/\\leq|\\le/g, " ≤ ")
         .replace(/\\geq|\\ge/g, " ≥ ")
         .replace(/\\neq|\\ne/g, " ≠ ")
         .replace(/\\approx/g, " ≈ ")
+        .replace(/\\equiv/g, " ≡ ")
+        .replace(/\\sim/g, " ∼ ")
         .replace(/\\infty/g, "∞")
+        .replace(/\\in\b/g, " ∈ ")
+        .replace(/\\notin\b/g, " ∉ ")
+        .replace(/\\subset/g, " ⊂ ")
+        .replace(/\\cup/g, " ∪ ")
+        .replace(/\\cap/g, " ∩ ")
+        .replace(/\\emptyset|\\varnothing/g, "∅")
+        .replace(/\\forall/g, "∀")
+        .replace(/\\exists/g, "∃")
+        .replace(/\\mathbb\{R\}/g, "ℝ")
+        .replace(/\\mathbb\{Z\}/g, "ℤ")
+        .replace(/\\mathbb\{N\}/g, "ℕ")
+        .replace(/\\mathbb\{Q\}/g, "ℚ")
         .replace(/\\rightarrow|\\to|\\longrightarrow/g, " → ")
+        .replace(/\\leftarrow/g, " ← ")
+        .replace(/\\leftrightarrow|\\rightleftharpoons/g, " ⇌ ")
         .replace(/\\Rightarrow/g, " ⇒ ")
         .replace(/\\Leftrightarrow|\\iff/g, " ⇔ ")
+        .replace(/\\uparrow/g, "↑")
+        .replace(/\\downarrow/g, "↓")
         .replace(/\\Delta/g, "Δ")
+        .replace(/\\Omega/g, "Ω")
+        .replace(/\\Phi/g, "Φ")
         .replace(/\\pi/g, "π")
         .replace(/\\alpha/g, "α")
         .replace(/\\beta/g, "β")
         .replace(/\\gamma/g, "γ")
-        .replace(/\\LaTeX/g, "LaTeX")
-        .replace(/\\d?frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)")
-        .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)")
-        // 3. Chuyển đổi số mũ ^{...}, ^x và chỉ số dưới _{...}, _x (H₂O, C₆H₁₂O₆, t⁰)
+        .replace(/\\delta/g, "δ")
+        .replace(/\\epsilon|\\varepsilon/g, "ε")
+        .replace(/\\lambda/g, "λ")
+        .replace(/\\mu/g, "μ")
+        .replace(/\\omega/g, "ω")
+        .replace(/\\varphi|\\phi/g, "φ")
+        .replace(/\\sigma/g, "σ")
+        .replace(/\\theta/g, "θ")
+        .replace(/\\AA/g, "Å")
+        .replace(/\\male/g, "♂")
+        .replace(/\\female/g, "♀")
+        .replace(/\\int/g, "∫")
+        .replace(/\\sum/g, "∑")
+        .replace(/\\lim/g, "lim")
+        .replace(/\\quad|\\qquad|\\,|\\;|\\!/g, " ");
+
+      // Bước 7: Chuyển đổi chỉ số trên ^{...}, ^x và chỉ số dưới _{...}, _x (H₂O, C₆H₁₂O₆, x²)
+      s = s
         .replace(/\^\{([^{}]+)\}/g, "<sup>$1</sup>")
         .replace(/\^([0-9a-zA-Z+\-°]+)/g, "<sup>$1</sup>")
         .replace(/\_\{([^{}]+)\}/g, "<sub>$1</sub>")
         .replace(/\_([0-9a-zA-Z+\-]+)/g, "<sub>$1</sub>");
 
+      // Bước 8: Dọn sạch các dấu ngoặc nhọn { } hoặc lệnh \ thừa còn sót lại
+      s = s.replace(/\\([a-zA-Z]+)/g, "$1").replace(/[{}]/g, "");
+
+      return s;
+    };
+
+    const renderMath = (tex: string, displayMode: boolean) => {
+      const cleanTex = tex
+        .trim()
+        .replace(/\bt\^o\b/g, "t^\\circ")
+        .replace(/\\frac\b/g, "\\dfrac")
+        .replace(/\\lim\b/g, "\\displaystyle\\lim")
+        .replace(/\\sum\b/g, "\\displaystyle\\sum")
+        .replace(/\\int\b/g, "\\displaystyle\\int");
+
+      // Nếu KaTeX đã sẵn sàng VÀ biểu thức không chứa tiếng Việt có dấu trong \xrightarrow gây lỗi font
+      const hasComplexChemArrow =
+        /\\xrightarrow|\\xrightleftharpoons/.test(cleanTex) &&
+        /[^\x00-\x7F]/.test(cleanTex);
+
+      if (
+        typeof window !== "undefined" &&
+        window.katex &&
+        !hasComplexChemArrow
+      ) {
+        try {
+          return window.katex
+            .renderToString(cleanTex, {
+              displayMode,
+              throwOnError: true,
+              strict: false,
+              trust: true,
+            })
+            .replace(/\r?\n/g, " ");
+        } catch {
+          // Chuyển ngay sang bộ dựng HTML chất lượng cao bên dưới nếu KaTeX báo lỗi
+        }
+      }
+
+      const richHtml = convertLatexToRichHtml(cleanTex);
       return displayMode
-        ? '<div class="my-2 py-2 px-3 bg-blue-50/70 rounded-lg font-semibold text-blue-950 text-center overflow-x-auto">' + fallback + "</div>"
-        : '<span class="font-semibold text-blue-900">' + fallback + "</span>";
+        ? '<div class="my-2.5 py-2.5 px-4 bg-blue-50/80 border border-blue-100 rounded-xl font-semibold text-blue-950 text-center overflow-x-auto">' +
+            richHtml +
+            "</div>"
+        : '<span class="font-semibold text-blue-950">' + richHtml + "</span>";
     };
 
     const specialBlocks: string[] = [];
@@ -680,54 +1020,118 @@ export default function IChatPage() {
       return id;
     };
 
-    // 1. Tách khối vẽ đồ thị
-    let processed = rawText.replace(/\x60\x60\x60graph\s*([\s\S]*?)\x60\x60\x60/gi, (_, json) => {
-      const graphHtml = renderFunctionGraph(String(json));
-      return graphHtml ? "\n" + saveBlock(graphHtml) + "\n" : "";
-    });
+    // 0. Bảo vệ thẻ gạch chân <u>...</u> cho bài tập phát âm Tiếng Anh
+    let processed = rawText.replace(/<u>([\s\S]*?)<\/u>/gi, (_, content) =>
+      saveBlock(
+        '<u class="decoration-2 decoration-blue-700 underline-offset-4 font-bold text-blue-900">' +
+          escapeHtml(String(content)) +
+          "</u>"
+      )
+    );
 
-    // 2. Tách khối vẽ hình học 2D/3D
-    processed = processed.replace(/\x60\x60\x60geo\s*([\s\S]*?)\x60\x60\x60/gi, (_, json) => {
-      const geoHtml = renderGeometryBlock(String(json));
-      return geoHtml ? "\n" + saveBlock(geoHtml) + "\n" : "";
-    });
+    // 1. Tách khối vẽ đồ thị ```graph ... ```
+    processed = processed.replace(
+      /\x60\x60\x60graph\s*([\s\S]*?)\x60\x60\x60/gi,
+      (_, json) => {
+        const graphHtml = renderFunctionGraph(String(json));
+        return graphHtml ? "\n" + saveBlock(graphHtml) + "\n" : "";
+      }
+    );
 
-    // 3. Tách khối hình SVG
-    processed = processed.replace(/\x60\x60\x60svg\s*([\s\S]*?)\x60\x60\x60/gi, (_, svgCode) => {
-      const cleanSvg = String(svgCode).trim().replace(/\r?\n/g, " ");
+    // 2. Tách khối vẽ hình học 2D/3D ```geo ... ```
+    processed = processed.replace(
+      /\x60\x60\x60geo\s*([\s\S]*?)\x60\x60\x60/gi,
+      (_, json) => {
+        const geoHtml = renderGeometryBlock(String(json));
+        return geoHtml ? "\n" + saveBlock(geoHtml) + "\n" : "";
+      }
+    );
+
+    // 3. Tách khối hình SVG ```svg ... ```
+    processed = processed.replace(
+      /\x60\x60\x60svg\s*([\s\S]*?)\x60\x60\x60/gi,
+      (_, svgCode) => {
+        const cleanSvg = String(svgCode).trim().replace(/\r?\n/g, " ");
+        return (
+          "\n" +
+          saveBlock(
+            '<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex justify-center overflow-x-auto">' +
+              cleanSvg +
+              "</div>"
+          ) +
+          "\n"
+        );
+      }
+    );
+
+    // 4. Tách công thức lớn $$...$$ và \[...\]
+    processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
       return (
         "\n" +
         saveBlock(
-          '<div class="my-3 p-3 bg-white border border-blue-100 rounded-xl shadow-sm flex justify-center overflow-x-auto">' +
-            cleanSvg +
+          '<div class="my-2 overflow-x-auto">' +
+            renderMath(String(tex), true) +
             "</div>"
         ) +
         "\n"
       );
     });
 
-    // 4. Tách công thức lớn $$...$$ và \[...\]
-    processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-      return "\n" + saveBlock('<div class="my-2 overflow-x-auto">' + renderMath(String(tex), true) + "</div>") + "\n";
-    });
-
     processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, tex) => {
-      return "\n" + saveBlock('<div class="my-2 overflow-x-auto">' + renderMath(String(tex), true) + "</div>") + "\n";
+      return (
+        "\n" +
+        saveBlock(
+          '<div class="my-2 overflow-x-auto">' +
+            renderMath(String(tex), true) +
+            "</div>"
+        ) +
+        "\n"
+      );
     });
 
-    // Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
-    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => saveBlock(renderMath(String(tex), false)));
-    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => saveBlock(renderMath(String(tex), false)));
+    // 5. Tách công thức nhỏ nằm trên cùng dòng $...$ và \(...\)
+    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) =>
+      saveBlock(renderMath(String(tex), false))
+    );
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) =>
+      saveBlock(renderMath(String(tex), false))
+    );
 
-    // 5. Tự động bắt các công thức Toán/Hóa mà AI quên bọc dấu $...$ (ví dụ: (\text{C}_6\text{H}_{12}\text{O}_6) hoặc dòng chứa \xrightarrow)
-    processed = processed.replace(/\(((?:\\text|\\mathrm|\\dfrac|\\frac|\\sqrt)[^()\n]+)\)/g, (_, tex) => {
-      return "(" + saveBlock(renderMath(String(tex), false)) + ")";
-    });
+    // 6. LƯỚI BẢO VỆ CHỐNG LỘ MÃ LATEX (Khi AI quên bọc dấu $...$):
+    // 6a. Nếu cả dòng là phương trình phản ứng có \xrightarrow hoặc \xrightleftharpoons mà AI quên bọc $$
+    processed = processed.replace(
+      /^([^\n]*(?:\\xrightarrow|\\xrightleftharpoons)[^\n]*)$/gm,
+      (line) => {
+        if (line.includes("@@BLOCK_")) return line;
+        return (
+          "\n" +
+          saveBlock(
+            '<div class="my-2 overflow-x-auto">' +
+              renderMath(line, true) +
+              "</div>"
+          ) +
+          "\n"
+        );
+      }
+    );
 
-    processed = processed.replace(/^([^\n]*\\xrightarrow[^\n]*)$/gm, (line) => {
-      if (line.includes("@@BLOCK_")) return line;
-      return "\n" + saveBlock('<div class="my-2 overflow-x-auto">' + renderMath(line, true) + "</div>") + "\n";
-    });
+    // 6b. Nếu trong ngoặc đơn (...) chứa mã LaTeX trần như (\text{C}_6\text{H}_{12}\text{O}_6)
+    processed = processed.replace(
+      /\(([^()\n]*\\(?:text|mathrm|ce|dfrac|frac|sqrt|rightarrow|to)[^()\n]*)\)/g,
+      (_, innerTex) => {
+        if (String(innerTex).includes("@@BLOCK_")) return "(" + innerTex + ")";
+        return "(" + saveBlock(renderMath(String(innerTex), false)) + ")";
+      }
+    );
+
+    // 6c. Quét các lệnh LaTeX rời rạc còn sót lại ngoài dấu $ (như \text{C}_6\text{H}_{12}\text{O}_6, \dfrac{a}{b}, C_6H_{12}O_6)
+    processed = processed.replace(
+      /(?:\\(?:text|mathrm|ce)\{[^{}]+\}|\\(?:d?frac)\{[^{}]+\}\{[^{}]+\}|\\sqrt\{[^{}]+\}|[A-Z][a-z]?(?:_\{?\d+\}?|\^\{?[0-9+\-]+}?)+)+/g,
+      (match) => {
+        if (match.includes("@@BLOCK_")) return match;
+        return saveBlock(renderMath(match, false));
+      }
+    );
 
     // Tự động ngắt dòng với các dấu --- hoặc tiêu đề ### bị viết liền
     processed = processed
@@ -737,12 +1141,32 @@ export default function IChatPage() {
     // Làm sạch HTML, định dạng chữ và đưa dấu + của 10+ lên làm số mũ
     processed = escapeHtml(processed)
       .replace(/^---$/gm, '<hr class="my-3 border-gray-200" />')
-      .replace(/^###\s+(.+)$/gm, '<div class="font-bold text-blue-800 text-base mt-3 mb-1">$1</div>')
-      .replace(/^##\s+(.+)$/gm, '<div class="font-bold text-blue-900 text-lg mt-3 mb-1">$1</div>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>')
+      .replace(
+        /^####\s+(.+)$/gm,
+        '<div class="font-bold text-blue-700 text-sm md:text-base mt-2.5 mb-1">$1</div>'
+      )
+      .replace(
+        /^###\s+(.+)$/gm,
+        '<div class="font-bold text-blue-800 text-base md:text-lg mt-3 mb-1">$1</div>'
+      )
+      .replace(
+        /^##\s+(.+)$/gm,
+        '<div class="font-bold text-blue-900 text-lg md:text-xl mt-3.5 mb-1.5">$1</div>'
+      )
+      .replace(
+        /^&gt;\s*(.+)$/gm,
+        '<blockquote class="border-l-4 border-blue-400 bg-blue-50/50 pl-3 py-1 my-1.5 italic text-gray-700">$1</blockquote>'
+      )
+      .replace(
+        /\*\*([^*]+)\*\*/g,
+        '<strong class="font-bold text-gray-900">$1</strong>'
+      )
       .replace(/^\s*[\*\-]\s+/gm, "• ")
       .replace(/\*([^*\n]+)\*/g, '<em class="italic text-gray-700">$1</em>')
-      .replace(/\x60([^\x60\n]+)\x60/g, '<code class="bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
+      .replace(
+        /\x60([^\x60\n]+)\x60/g,
+        '<code class="bg-gray-100 text-pink-600 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>'
+      )
       .replace(/10\+/g, '10<sup class="font-bold">+</sup>');
 
     // Tách dòng và tự động gom các dòng có dấu |...| thành Bảng kẻ ô (Table)
@@ -764,21 +1188,34 @@ export default function IChatPage() {
         }
 
         const validRows = tableLines.filter((row) => {
-          const cells = row.slice(1, -1).split("|").map((c) => c.trim());
+          const cells = row
+            .slice(1, -1)
+            .split("|")
+            .map((c) => c.trim());
           return !cells.every((c) => /^[:\-\s]+$/.test(c));
         });
 
         if (validRows.length > 0) {
           const rowsHtml = validRows
             .map((row, rIdx) => {
-              const cells = row.slice(1, -1).split("|").map((c) => c.trim());
+              const cells = row
+                .slice(1, -1)
+                .split("|")
+                .map((c) => c.trim());
               const cellsHtml = cells
                 .map((cell, cIdx) => {
-                  const isHeaderCell = cIdx === 0 || (rIdx === 0 && validRows.length > 2);
+                  const isHeaderCell =
+                    cIdx === 0 || (rIdx === 0 && validRows.length > 2);
                   const cellStyle = isHeaderCell
                     ? "bg-blue-50/80 font-semibold text-blue-950"
                     : "bg-white text-gray-800";
-                  return '<td class="border border-blue-200 px-3.5 py-2 text-center ' + cellStyle + '">' + cell + "</td>";
+                  return (
+                    '<td class="border border-blue-200 px-3.5 py-2 text-center ' +
+                    cellStyle +
+                    '">' +
+                    cell +
+                    "</td>"
+                  );
                 })
                 .join("");
               return "<tr>" + cellsHtml + "</tr>";
@@ -797,9 +1234,12 @@ export default function IChatPage() {
       }
     }
 
-    // Khôi phục khối Đồ thị, Hình học 2D/3D và Công thức Toán/Hóa vào từng dòng/bảng
+    // Khôi phục khối Đồ thị, Hình học 2D/3D và Công thức Toán/Lý/Hóa/Sinh vào từng dòng/bảng
     return groupedBlocks.map((block, i) => {
-      const restoredBlock = block.replace(/@@BLOCK_(\d+)@@/g, (_, bIdx) => specialBlocks[Number(bIdx)] || "");
+      const restoredBlock = block.replace(
+        /@@BLOCK_(\d+)@@/g,
+        (_, bIdx) => specialBlocks[Number(bIdx)] || ""
+      );
       return (
         <div
           key={i}
@@ -810,19 +1250,31 @@ export default function IChatPage() {
     });
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  const handleSend = async (customText?: string) => {
+    const userMsg = (customText ?? input).trim();
+    if (!userMsg || loading) return;
 
-    const userMsg = input.trim();
-    setInput("");
+    if (!customText) setInput("");
     setMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
     setLoading(true);
+
+    // Tự động lấy Khối lớp của học sinh đã đăng nhập (nếu có) để AI giải đúng lớp
+    let savedGrade = "";
+    try {
+      const savedProfile = localStorage.getItem("d10_user_profile");
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        if (parsed && parsed.grade) savedGrade = String(parsed.grade);
+      }
+    } catch {
+      // Bỏ qua nếu chưa đăng nhập
+    }
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg }),
+        body: JSON.stringify({ message: userMsg, grade: savedGrade }),
       });
       const data = await res.json();
 
@@ -831,7 +1283,10 @@ export default function IChatPage() {
       } else {
         setMessages((prev) => [
           ...prev,
-          { sender: "ai", text: "Hệ thống đang bận, vui lòng thử lại sau giây lát!" },
+          {
+            sender: "ai",
+            text: "Hệ thống đang bận, vui lòng thử lại sau giây lát!",
+          },
         ]);
       }
     } catch {
@@ -845,9 +1300,8 @@ export default function IChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] font-sans py-8 px-4 flex justify-center">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col h-[80vh]">
-        
+    <div className="min-h-screen bg-[#f4f6f8] font-sans py-6 px-4 flex justify-center">
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col h-[82vh]">
         {/* HEADER */}
         <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-4 text-white rounded-t-2xl flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
@@ -855,13 +1309,36 @@ export default function IChatPage() {
               10<sup className="text-xs -top-2">+</sup>
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight">iChat - Trợ lý Hỏi đáp AI</h1>
+              <h1 className="font-bold text-lg leading-tight">
+                iChat - Trợ lý Hỏi đáp AI (Lớp 6 - 12)
+              </h1>
               <p className="text-xs text-blue-100 flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Sẵn sàng hỗ trợ 24/7
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>{" "}
+                Chuẩn SGK Kết nối tri thức với cuộc sống • Hỗ trợ 24/7
               </p>
             </div>
           </div>
-          <span className="bg-blue-800/60 text-xs px-3 py-1 rounded-full border border-blue-400/30">10 Plus AI</span>
+          <span className="bg-blue-800/60 text-xs px-3 py-1 rounded-full border border-blue-400/30">
+            10 Plus AI
+          </span>
+        </div>
+
+        {/* THANH GỢI Ý NHANH CÁC MÔN HỌC */}
+        <div className="px-4 py-2 bg-blue-50/60 border-b border-blue-100 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+          <span className="text-xs font-semibold text-blue-800 shrink-0">
+            Gợi ý nhanh:
+          </span>
+          {QUICK_PROMPTS.map((prompt, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleSend(prompt)}
+              disabled={loading}
+              className="text-xs bg-white hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 px-3 py-1 rounded-full transition shadow-2xs shrink-0 disabled:opacity-50"
+            >
+              {prompt}
+            </button>
+          ))}
         </div>
 
         {/* KHU VỰC TIN NHẮN */}
@@ -869,11 +1346,14 @@ export default function IChatPage() {
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={"flex " + (msg.sender === "user" ? "justify-end" : "justify-start")}
+              className={
+                "flex " +
+                (msg.sender === "user" ? "justify-end" : "justify-start")
+              }
             >
               <div
                 className={
-                  "max-w-[80%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed " +
+                  "max-w-[85%] rounded-2xl p-4 shadow-sm text-sm md:text-base leading-relaxed " +
                   (msg.sender === "user"
                     ? "bg-blue-600 text-white rounded-br-none whitespace-pre-wrap"
                     : "bg-white text-gray-800 border border-gray-100 rounded-bl-none space-y-2")
@@ -890,7 +1370,7 @@ export default function IChatPage() {
                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></div>
                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                <span>iChat đang suy nghĩ câu trả lời...</span>
+                <span>iChat đang biên soạn câu trả lời...</span>
               </div>
             </div>
           )}
@@ -910,7 +1390,7 @@ export default function IChatPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi Toán, Lý, Hóa, Văn... hoặc cần giải bài tập tại đây"
+              placeholder="Nhập câu hỏi Toán, Lý, Hóa, Sinh, KHTN, Văn, Anh (Lớp 6 - 12) hoặc yêu cầu soạn bài..."
               className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm md:text-base focus:outline-none focus:border-blue-600 transition"
             />
             <button
@@ -919,12 +1399,24 @@ export default function IChatPage() {
               className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2"
             >
               <span>Gửi</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
             </button>
           </form>
         </div>
-
       </div>
     </div>
   );
 }
+```
