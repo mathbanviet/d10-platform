@@ -39,60 +39,102 @@ const SYSTEM_PROMPT = [
   "\x60\x60\x60"
 ].join("\n");
 
+function cleanKey(k: string | undefined): string {
+  if (!k) return "";
+  return k.trim().replace(/^["']|["']$/g, "").trim();
+}
+
 export async function POST(req: Request) {
   try {
     const { message, grade } = await req.json();
 
-    const geminiKey = process.env.GEMINI_API_KEY_4 || process.env.GEMINI_API_KEY;
-    const deepseekKey = process.env.DEEPSEEK_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
+    // Thu thập tất cả các Gemini API Key có thể có và lọc bỏ trùng lặp
+    const rawGeminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_4,
+      process.env.GEMINI_API_KEY_1,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+      process.env.GEMINI_API_KEY_5,
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+    ];
+    const geminiKeys = Array.from(
+      new Set(rawGeminiKeys.map(cleanKey).filter((k) => k.length > 10))
+    );
 
-    if (!geminiKey && !deepseekKey && !openaiKey) {
-      return NextResponse.json(
-        { error: "Chưa cấu hình bất kỳ API Key nào!" },
-        { status: 500 }
-      );
+    const deepseekKey = cleanKey(process.env.DEEPSEEK_API_KEY);
+    const openaiKey = cleanKey(process.env.OPENAI_API_KEY);
+
+    if (geminiKeys.length === 0 && !deepseekKey && !openaiKey) {
+      return NextResponse.json({
+        reply:
+          "⚠️ Hệ thống chưa nhận được API Key trên Vercel. Thầy vui lòng kiểm tra mục Settings -> Environment Variables trên Vercel (đảm bảo đã tích chọn cả Production và Preview) rồi Redeploy nhé!",
+      });
     }
 
     const userContext = grade
       ? "[Học sinh đang học: " + grade + " - Bộ SGK Kết nối tri thức với cuộc sống]\nCâu hỏi: " + message
       : "Câu hỏi: " + message;
 
-    // LỰA CHỌN 1: GOOGLE GEMINI
-    if (geminiKey) {
-      const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash-lite"];
+    const errorLogs: string[] = [];
 
-      for (const modelName of geminiModels) {
-        try {
-          const geminiRes = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + geminiKey,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    role: "user",
-                    parts: [{ text: SYSTEM_PROMPT + "\n\n" + userContext }],
-                  },
-                ],
-              }),
+    // LỰA CHỌN 1: GOOGLE GEMINI (Tự động xoay vòng qua tất cả các Key và các Model)
+    if (geminiKeys.length > 0) {
+      const geminiModels = [
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+      ];
+
+      for (let kIdx = 0; kIdx < geminiKeys.length; kIdx++) {
+        const apiKey = geminiKeys[kIdx];
+        for (const modelName of geminiModels) {
+          try {
+            const geminiRes = await fetch(
+              "https://generativelanguage.googleapis.com/v1beta/models/" +
+                modelName +
+                ":generateContent?key=" +
+                apiKey,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [
+                    {
+                      role: "user",
+                      parts: [{ text: SYSTEM_PROMPT + "\n\n" + userContext }],
+                    },
+                  ],
+                }),
+              }
+            );
+            const geminiData = await geminiRes.json();
+
+            if (geminiRes.ok && !geminiData.error) {
+              const replyText =
+                geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (replyText) return NextResponse.json({ reply: replyText });
             }
-          );
-          const geminiData = await geminiRes.json();
 
-          if (geminiRes.ok && !geminiData.error) {
-            const replyText =
-              geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (replyText) return NextResponse.json({ reply: replyText });
+            const errMsg = geminiData?.error?.message || ("HTTP " + geminiRes.status);
+            errorLogs.push("Gemini(" + modelName + "): " + errMsg);
+            console.warn("Model " + modelName + " báo lỗi:", errMsg);
+
+            // Nếu Key bị báo lỗi không hợp lệ hoặc bị khóa (API_KEY_INVALID / leaked), chuyển ngay sang Key tiếp theo
+            if (
+              errMsg.includes("API_KEY_INVALID") ||
+              errMsg.includes("leaked") ||
+              errMsg.includes("expired") ||
+              geminiRes.status === 400 ||
+              geminiRes.status === 403
+            ) {
+              break;
+            }
+          } catch (error) {
+            errorLogs.push("Gemini(" + modelName + "): Lỗi kết nối mạng");
+            console.error("Lỗi mạng khi gọi " + modelName + ":", error);
           }
-
-          console.warn(
-            "Model " + modelName + " báo lỗi:",
-            geminiData?.error?.message
-          );
-        } catch (error) {
-          console.error("Lỗi mạng khi gọi " + modelName + ":", error);
         }
       }
     }
@@ -124,7 +166,11 @@ export async function POST(req: Request) {
             reply: deepseekData.choices[0].message.content,
           });
         }
+        errorLogs.push(
+          "DeepSeek: " + (deepseekData?.error?.message || ("HTTP " + deepseekRes.status))
+        );
       } catch (error) {
+        errorLogs.push("DeepSeek: Lỗi mạng");
         console.error("Lỗi mạng khi gọi DeepSeek:", error);
       }
     }
@@ -156,14 +202,20 @@ export async function POST(req: Request) {
             reply: openaiData.choices[0].message.content,
           });
         }
+        errorLogs.push(
+          "OpenAI: " + (openaiData?.error?.message || ("HTTP " + openaiRes.status))
+        );
       } catch (error) {
+        errorLogs.push("OpenAI: Lỗi mạng");
         console.error("Lỗi mạng khi gọi OpenAI:", error);
       }
     }
 
     return NextResponse.json({
       reply:
-        "Xin lỗi Thầy/Cô và các em học sinh, hệ thống AI hiện đang bảo trì hoặc mạng quá tải. Vui lòng thử lại sau ít phút nhé!",
+        "Xin lỗi Thầy/Cô và các em học sinh, hệ thống AI hiện đang bảo trì hoặc mạng quá tải. Vui lòng thử lại sau ít phút nhé!\n\n*(Chi tiết kỹ thuật để Thầy kiểm tra Key: " +
+        errorLogs.slice(0, 3).join(" | ") +
+        ")*",
     });
   } catch (error) {
     console.error("Lỗi Server Tổng:", error);
