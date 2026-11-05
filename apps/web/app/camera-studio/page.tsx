@@ -128,6 +128,7 @@ export default function CameraStudioPage() {
   const [flashEffect, setFlashEffect] = useState<boolean>(false);
   const [isComparing, setIsComparing] = useState<boolean>(false);
 
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0); // 1.0 là mặc định, >1 là phóng to, <1 (nếu hỗ trợ) hoặc căn chỉnh khung
   const [skinSmooth, setSkinSmooth] = useState<number>(65);
   const [skinWhiten, setSkinWhiten] = useState<number>(40);
   const [rosyCheeks, setRosyCheeks] = useState<number>(30);
@@ -1266,14 +1267,34 @@ export default function CameraStudioPage() {
               </p>
             </div>
           </div>
-          <a
-            href={item.url}
-            download={`diem10-studio-${item.id}.${item.type === "photo" ? "jpg" : "webm"}`}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>Tải về máy</span>
-          </a>
+          <button
+  onClick={async () => {
+    try {
+      if (navigator.share && item.type === "photo") {
+        const response = await fetch(item.url);
+        const blob = await response.blob();
+        const file = new File([blob], `diem10-studio-${item.id}.jpg`, { type: "image/jpeg" });
+        await navigator.share({
+          files: [file],
+          title: "Ảnh chụp từ Điểm 10+",
+        });
+        return;
+      }
+    } catch (err) {
+      console.log("Share cancelled", err);
+    }
+    const a = document.createElement("a");
+    a.href = item.url;
+    a.download = `diem10-studio-${item.id}.${item.type === "photo" ? "jpg" : "webm"}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }}
+  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg transition-colors cursor-pointer"
+>
+  <Download className="w-4 h-4" />
+  <span>Tải về máy</span>
+</button>
         </div>
       ))
     )}
