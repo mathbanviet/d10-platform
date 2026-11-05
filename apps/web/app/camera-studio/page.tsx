@@ -247,22 +247,28 @@ export default function CameraStudioPage() {
 
           const filterPreset = selectedFilter || DEFAULT_FILTER;
 
+          // Tính toán lại khung cắt (crop) từ tâm theo hệ số zoom
+const zSw = sw / zoom;
+const zSh = sh / zoom;
+const zSx = sx + (sw - zSw) / 2;
+const zSy = sy + (sh - zSh) / 2;
+
           if (isComparing) {
             ctx.filter = "none";
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+            ctx.drawImage(video, zSx, zSy, zSw, zSh, 0, 0, targetW, targetH);
           } else {
             const whitenBoost = 1 + (skinWhiten / 100) * 0.25;
             const saturateBoost = 1 + (rosyCheeks / 100) * 0.3 + (lipTint / 100) * 0.2;
             const baseFilter = filterPreset.cssFilter !== "none" ? filterPreset.cssFilter : "";
 
             ctx.filter = `${baseFilter} brightness(${whitenBoost}) saturate(${saturateBoost})`.trim();
-            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+            ctx.drawImage(video, zSx, zSy, zSw, zSh, 0, 0, targetW, targetH);
 
             if (skinSmooth > 0) {
               ctx.save();
               ctx.globalAlpha = (skinSmooth / 100) * 0.3;
               ctx.filter = `blur(${Math.max(1, Math.round((skinSmooth / 100) * 8))}px)`;
-              ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+              ctx.drawImage(video, zSx, zSy, zSw, zSh, 0, 0, targetW, targetH);
               ctx.restore();
             }
 
