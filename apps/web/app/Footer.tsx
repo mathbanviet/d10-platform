@@ -59,7 +59,7 @@ export default function Footer() {
               <div className="flex flex-col">
                 <div className="flex items-start">
                   <span className="text-2xl font-extrabold tracking-tight text-white leading-none">
-                    Schooli.vn
+                    Lms.d10hub.io.vn
                   </span>
                   <span className="text-[10px] font-bold ml-0.5 -mt-0.5">®</span>
                 </div>
@@ -90,7 +90,7 @@ export default function Footer() {
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-white shrink-0" />
                 <a
-                  href="mailto:schooli@gmail.com"
+                  href="mailto: tvkh.diem10cong@gmail.com"
                   className="hover:text-amber-300 transition-colors"
                 >
                   schooli@gmail.com
@@ -202,7 +202,7 @@ export default function Footer() {
                     rel="noopener noreferrer"
                     className="font-bold text-[#1877f2] hover:underline text-sm block truncate"
                   >
-                    AiTechco.vn
+                    Lms.d10hub.io.vn
                   </a>
                   <span className="text-xs text-slate-500 block">
                     150.000 người theo dõi
