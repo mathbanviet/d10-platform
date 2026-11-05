@@ -125,7 +125,7 @@ export default function Footer() {
                 <LinkedinIcon className="w-4 h-4" />
               </a>
               <a
-                href="https://youtube.com"
+                href="https://www.youtube.com/@SchooliOnline"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="YouTube"
@@ -205,13 +205,13 @@ export default function Footer() {
                     AiTechco.vn
                   </a>
                   <span className="text-xs text-slate-500 block">
-                    12 người theo dõi
+                    150.000 người theo dõi
                   </span>
                 </div>
               </div>
               <div className="pt-2.5">
                 <a
-                  href="https://facebook.com"
+                  href="https://www.facebook.com/schooli.edu.vn"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 bg-[#f5f6f7] hover:bg-[#ebedf0] border border-[#ccd0d5] text-[#4b4f56] text-xs font-semibold px-2.5 py-1 rounded-sm transition"
@@ -230,8 +230,8 @@ export default function Footer() {
       <div className="w-full bg-[#003d7a] border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs sm:text-sm text-blue-200 space-y-1 text-center sm:text-left">
-            <p>© 2026 Schooli. All rights reserved.</p>
-            <p>Thuộc bản quyền CÔNG TY TNHH TRƯỜNG HỌC TRỰC TUYẾN SCHOOLI</p>
+            <p>© 2026 Website Creator & Developer: Phuc Huy Domingo. All rights reserved.</p>
+            <p>Thuộc bản quyền TRƯỜNG HỌC TRỰC TUYẾN ĐIỂM 10⁺ ONLINE</p>
           </div>
 
           <button
