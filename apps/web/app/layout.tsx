@@ -50,8 +50,11 @@ export default function RootLayout({
                 <span>🎥 Lớp Live</span>
               </Link>
               <Link href="/teachers" className="hover:text-yellow-300 transition-colors">Giáo viên</Link>
-              <Link href="/ichat" className="hover:text-yellow-300 transition-colors flex items-center gap-1 font-semibold">
+                            <Link href="/ichat" className="hover:text-yellow-300 transition-colors flex items-center gap-1 font-semibold">
                 iChat - Hỏi đáp AI
+              </Link>
+              <Link href="/apps-new" className="bg-amber-400 hover:bg-amber-500 text-blue-950 px-2.5 py-1 rounded-full font-bold shadow-xs transition-colors flex items-center gap-1">
+                <span>🚀 Apps & Ứng dụng</span>
               </Link>
               <Link href="/guide" className="hover:text-yellow-300 transition-colors">Hướng dẫn Đăng ký</Link>
               <a href="https://d10hub.io.vn" target="_blank" rel="noopener noreferrer" className="hover:text-yellow-300 transition-colors">Tài liệu</a>
