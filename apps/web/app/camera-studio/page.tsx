@@ -113,642 +113,638 @@ const STICKER_PACK = [
 ];
 
 export default function CameraStudioPage() {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const renderCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const animFrameRef = useRef<number | null>(null);
+
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [activeTab, setActiveTab] = useState<"beauty" | "makeup" | "filters" | "creative" | "gallery">("creative");
+
+  const [isMirrored, setIsMirrored] = useState<boolean>(true);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatioItem>(DEFAULT_AR);
+  const [flashEffect, setFlashEffect] = useState<boolean>(false);
+  const [isComparing, setIsComparing] = useState<boolean>(false);
+
+  const [skinSmooth, setSkinSmooth] = useState<number>(65);
+  const [skinWhiten, setSkinWhiten] = useState<number>(40);
+  const [rosyCheeks, setRosyCheeks] = useState<number>(30);
+  const [slimFace, setSlimFace] = useState<number>(50);
+  const [bigEyes, setBigEyes] = useState<number>(50);
+  const [lipTint, setLipTint] = useState<number>(20);
+
+  const [selectedFilter, setSelectedFilter] = useState<FilterPreset>(DEFAULT_FILTER);
+  const [selectedFrame, setSelectedFrame] = useState<string>("polaroid_pink");
+  const [frameCaption, setFrameCaption] = useState<string>("Điểm 10+ Studio ✨");
+  const [showDateStamp, setShowDateStamp] = useState<boolean>(true);
+  const [vignetteVal, setVignetteVal] = useState<number>(20);
+
+  const [stickers, setStickers] = useState<StickerItem[]>([
+    { id: "default-1", emoji: "✨", x: 82, y: 18, scale: 1.4 },
+  ]);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
+
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [recordSeconds, setRecordSeconds] = useState<number>(0);
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+
+  const initCamera = useCallback(async () => {
+    setStatus("loading");
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          audio: true,
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    initCamera();
+    return () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [initCamera]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    if (isRecording) {
+      timer = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+    } else {
+      setRecordSeconds(0);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRecording]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const renderLoop = () => {
+      if (!isMounted) return;
+      const video = videoRef.current;
+      const canvas = renderCanvasRef.current;
+      const currentAr = aspectRatio || DEFAULT_AR;
+
+      if (video && canvas && video.readyState >= 2) {
+        const targetW = currentAr.w;
+        const targetH = currentAr.h;
+
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width = targetW;
+          canvas.height = targetH;
+        }
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const vw = video.videoWidth || 1280;
+          const vh = video.videoHeight || 720;
+          const videoAspect = vw / vh;
+          const targetAspect = targetW / targetH;
+
+          let sx = 0,
+            sy = 0,
+            sw = vw,
+            sh = vh;
+          if (videoAspect > targetAspect) {
+            sw = vh * targetAspect;
+            sx = (vw - sw) / 2;
+          } else {
+            sh = vw / targetAspect;
+            sy = (vh - sh) / 2;
+          }
+
+          ctx.save();
+          ctx.clearRect(0, 0, targetW, targetH);
+
+          if (isMirrored) {
+            ctx.translate(targetW, 0);
+            ctx.scale(-1, 1);
+          }
+
+          const filterPreset = selectedFilter || DEFAULT_FILTER;
+
+          if (isComparing) {
+            ctx.filter = "none";
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+          } else {
+            const whitenBoost = 1 + (skinWhiten / 100) * 0.25;
+            const saturateBoost = 1 + (rosyCheeks / 100) * 0.3 + (lipTint / 100) * 0.2;
+            const baseFilter = filterPreset.cssFilter !== "none" ? filterPreset.cssFilter : "";
+
+            ctx.filter = `${baseFilter} brightness(${whitenBoost}) saturate(${saturateBoost})`.trim();
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+
+            if (skinSmooth > 0) {
+              ctx.save();
+              ctx.globalAlpha = (skinSmooth / 100) * 0.3;
+              ctx.filter = `blur(${Math.max(1, Math.round((skinSmooth / 100) * 8))}px)`;
+              ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+              ctx.restore();
+            }
+
+            if (filterPreset.tintColor && filterPreset.blendMode) {
+              ctx.save();
+              ctx.fillStyle = filterPreset.tintColor;
+              ctx.globalCompositeOperation = filterPreset.blendMode;
+              ctx.fillRect(0, 0, targetW, targetH);
+              ctx.restore();
+            }
+
+            if (lipTint > 0) {
+              ctx.save();
+              const makeUpGrad = ctx.createLinearGradient(0, targetH / 2, 0, targetH);
+              makeUpGrad.addColorStop(0, "rgba(225, 29, 72, 0)");
+              makeUpGrad.addColorStop(1, `rgba(225, 29, 72, ${(lipTint / 100) * 0.15})`);
+              ctx.fillStyle = makeUpGrad;
+              ctx.globalCompositeOperation = "soft-light";
+              ctx.fillRect(0, 0, targetW, targetH);
+              ctx.restore();
+            }
+
+            if (vignetteVal > 0) {
+              ctx.save();
+              const grad = ctx.createRadialGradient(
+                targetW / 2,
+                targetH / 2,
+                targetW * 0.3,
+                targetW / 2,
+                targetH / 2,
+                targetW * 0.8
+              );
+              grad.addColorStop(0, "rgba(0,0,0,0)");
+              grad.addColorStop(1, `rgba(0,0,0,${(vignetteVal / 100) * 0.8})`);
+              ctx.fillStyle = grad;
+              ctx.fillRect(0, 0, targetW, targetH);
+              ctx.restore();
+            }
+          }
+
+          ctx.restore();
+
+          // --- VẼ 12 KHUNG ẢNH NGHỆ THUẬT ---
+          const nowStr = new Date().toLocaleDateString("vi-VN");
+          const captionText = frameCaption.trim() || "Điểm 10+ Studio";
+
+          ctx.save();
+
+          if (selectedFrame === "polaroid") {
+            const side = Math.round(targetW * 0.035);
+            const bottom = Math.round(targetH * 0.14);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, targetW, side);
+            ctx.fillRect(0, 0, side, targetH);
+            ctx.fillRect(targetW - side, 0, side, targetH);
+            ctx.fillRect(0, targetH - bottom, targetW, bottom);
+
+            ctx.fillStyle = "#1e293b";
+            ctx.font = "bold 26px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(captionText, targetW / 2, targetH - bottom / 2 + 6);
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#64748b";
+              ctx.font = "600 18px sans-serif";
+              ctx.textAlign = "right";
+              ctx.fillText(nowStr, targetW - side - 16, targetH - 22);
+            }
+          } else if (selectedFrame === "polaroid_pink") {
+            const side = Math.round(targetW * 0.035);
+            const bottom = Math.round(targetH * 0.14);
+            const grad = ctx.createLinearGradient(0, 0, targetW, targetH);
+            grad.addColorStop(0, "#fce7f3");
+            grad.addColorStop(0.5, "#fbcfe8");
+            grad.addColorStop(1, "#f9a8d4");
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, targetW, side);
+            ctx.fillRect(0, 0, side, targetH);
+            ctx.fillRect(targetW - side, 0, side, targetH);
+            ctx.fillRect(0, targetH - bottom, targetW, bottom);
+
+            ctx.strokeStyle = "#f472b6";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(side, side, targetW - side * 2, targetH - side - bottom);
+
+            ctx.fillStyle = "#be185d";
+            ctx.font = "bold 26px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`🌸 ${captionText} 🌸`, targetW / 2, targetH - bottom / 2 + 6);
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#db2777";
+              ctx.font = "bold 18px sans-serif";
+              ctx.textAlign = "right";
+              ctx.fillText(nowStr, targetW - side - 18, targetH - 22);
+            }
+          } else if (selectedFrame === "instax_sky") {
+            const side = Math.round(targetW * 0.035);
+            const bottom = Math.round(targetH * 0.14);
+            const grad = ctx.createLinearGradient(0, 0, targetW, targetH);
+            grad.addColorStop(0, "#e0f2fe");
+            grad.addColorStop(1, "#bae6fd");
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, targetW, side);
+            ctx.fillRect(0, 0, side, targetH);
+            ctx.fillRect(targetW - side, 0, side, targetH);
+            ctx.fillRect(0, targetH - bottom, targetW, bottom);
+
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(side, side, targetW - side * 2, targetH - side - bottom);
+
+            ctx.fillStyle = "#0369a1";
+            ctx.font = "bold 26px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`☁️ ${captionText} ☁️`, targetW / 2, targetH - bottom / 2 + 6);
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#0284c7";
+              ctx.font = "bold 18px sans-serif";
+              ctx.textAlign = "right";
+              ctx.fillText(nowStr, targetW - side - 18, targetH - 22);
+            }
+          } else if (selectedFrame === "diem10_gold") {
+            const border = 26;
+            ctx.fillStyle = "#004D95";
+            ctx.fillRect(0, 0, targetW, border);
+            ctx.fillRect(0, targetH - 68, targetW, 68);
+            ctx.fillRect(0, 0, border, targetH);
+            ctx.fillRect(targetW - border, 0, border, targetH);
+
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(border, border, targetW - border * 2, targetH - border - 68);
+
+            ctx.fillStyle = "#fbbf24";
+            ctx.font = "900 24px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`⭐ ${captionText.toUpperCase()} ⭐`, targetW / 2, targetH - 26);
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 16px sans-serif";
+              ctx.textAlign = "right";
+              ctx.fillText(nowStr, targetW - border - 14, targetH - 26);
+            }
+          } else if (selectedFrame === "y2k_window") {
+            const topBar = 52;
+            const side = 16;
+            const grad = ctx.createLinearGradient(0, 0, targetW, 0);
+            grad.addColorStop(0, "#ec4899");
+            grad.addColorStop(0.5, "#a855f7");
+            grad.addColorStop(1, "#3b82f6");
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, targetW, topBar);
+            ctx.fillRect(0, 0, side, targetH);
+            ctx.fillRect(targetW - side, 0, side, targetH);
+            ctx.fillRect(0, targetH - side, targetW, side);
+
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(side, topBar, targetW - side * 2, targetH - topBar - side);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 20px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText(`♡ CUTE_CAM.EXE — ${captionText}`, 24, 33);
+
+            ["#fde047", "#4ade80", "#f43f5e"].forEach((col, idx) => {
+              ctx.fillStyle = col;
+              ctx.beginPath();
+              ctx.arc(targetW - 32 - idx * 28, 26, 9, 0, Math.PI * 2);
+              ctx.fill();
+            });
+          } else if (selectedFrame === "film_strip") {
+            const barH = Math.round(targetH * 0.11);
+            ctx.fillStyle = "#09090b";
+            ctx.fillRect(0, 0, targetW, barH);
+            ctx.fillRect(0, targetH - barH, targetW, barH);
+
+            ctx.fillStyle = "#ffffff";
+            const holeW = 24;
+            const holeH = Math.round(barH * 0.45);
+            for (let x = 28; x < targetW - 28; x += 52) {
+              ctx.fillRect(x, Math.round((barH - holeH) / 2), holeW, holeH);
+              ctx.fillRect(x, targetH - barH + Math.round((barH - holeH) / 2), holeW, holeH);
+            }
+
+            ctx.fillStyle = "#f59e0b";
+            ctx.font = "bold 16px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText("KODAK PORTRA 400 • FILM STUDIO", 30, barH - 6);
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#fb923c";
+              ctx.font = "bold 26px monospace";
+              ctx.textAlign = "right";
+              ctx.fillText(`'26 ${nowStr} • ${captionText}`, targetW - 36, targetH - barH - 20);
+            }
+          } else if (selectedFrame === "magazine") {
+            ctx.strokeStyle = "rgba(255,255,255,0.85)";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(24, 24, targetW - 48, targetH - 48);
+
+            ctx.fillStyle = "rgba(255,255,255,0.92)";
+            ctx.font = "900 68px serif";
+            ctx.textAlign = "center";
+            ctx.fillText("STUDIO 10+", targetW / 2, 96);
+
+            ctx.font = "bold 20px sans-serif";
+            ctx.fillStyle = "#f43f5e";
+            ctx.fillText(captionText.toUpperCase(), targetW / 2, targetH - 44);
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 16px monospace";
+              ctx.textAlign = "left";
+              ctx.fillText(`ISSUE • ${nowStr}`, 42, targetH - 44);
+            }
+          } else if (selectedFrame === "cinema") {
+            const barH = Math.round(targetH * 0.12);
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, targetW, barH);
+            ctx.fillRect(0, targetH - barH, targetW, barH);
+
+            ctx.fillStyle = "#fde047";
+            ctx.font = "italic bold 22px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`"${captionText}"`, targetW / 2, targetH - barH / 2 + 8);
+          } else if (selectedFrame === "neon") {
+            ctx.strokeStyle = "#ec4899";
+            ctx.lineWidth = 8;
+            ctx.shadowColor = "#ec4899";
+            ctx.shadowBlur = 22;
+            ctx.strokeRect(20, 20, targetW - 40, targetH - 40);
+
+            ctx.strokeStyle = "#22d3ee";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "#22d3ee";
+            ctx.shadowBlur = 16;
+            ctx.strokeRect(32, 32, targetW - 64, targetH - 64);
+            ctx.shadowBlur = 0;
+
+            if (showDateStamp) {
+              ctx.fillStyle = "#f472b6";
+              ctx.font = "bold 20px monospace";
+              ctx.textAlign = "right";
+              ctx.fillText(`${captionText} • ${nowStr}`, targetW - 48, targetH - 48);
+            }
+          } else if (selectedFrame === "vintage_gold") {
+            ctx.strokeStyle = "#eab308";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(18, 18, targetW - 36, targetH - 36);
+
+            ctx.strokeStyle = "#fef08a";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(32, 32, targetW - 64, targetH - 64);
+
+            ctx.fillStyle = "#fef08a";
+            ctx.font = "bold 22px serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`✦ ${captionText} ✦`, targetW / 2, targetH - 46);
+          } else if (selectedFrame === "viewfinder") {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+            ctx.lineWidth = 3;
+            const m = 32,
+              len = 42;
+            ctx.beginPath();
+            ctx.moveTo(m, m + len);
+            ctx.lineTo(m, m);
+            ctx.lineTo(m + len, m);
+            ctx.moveTo(targetW - m - len, m);
+            ctx.lineTo(targetW - m, m);
+            ctx.lineTo(targetW - m, m + len);
+            ctx.moveTo(m, targetH - m - len);
+            ctx.lineTo(m, targetH - m);
+            ctx.lineTo(m + len, targetH - m);
+            ctx.moveTo(targetW - m - len, targetH - m);
+            ctx.lineTo(targetW - m, targetH - m);
+            ctx.lineTo(targetW - m, targetH - m - len);
+            ctx.stroke();
+
+            const cx = targetW / 2;
+            const cy = targetH / 2;
+            ctx.strokeStyle = "rgba(255,255,255,0.45)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx - 20, cy);
+            ctx.lineTo(cx + 20, cy);
+            ctx.moveTo(cx, cy - 20);
+            ctx.lineTo(cx, cy + 20);
+            ctx.stroke();
+
+            ctx.fillStyle = "#ef4444";
+            ctx.beginPath();
+            ctx.arc(m + 22, m + 24, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px monospace";
+            ctx.textAlign = "left";
+            ctx.fillText(`REC • ${captionText}`, m + 38, m + 30);
+
+            if (showDateStamp) {
+              ctx.textAlign = "right";
+              ctx.fillText(`4K 60FPS • ${nowStr}`, targetW - m - 16, targetH - m - 14);
+            }
+          }
+
+          ctx.restore();
+
+          // Stickers
+          ctx.save();
+          stickers.forEach((st) => {
+            const fontSize = Math.round(48 * st.scale);
+            ctx.font = `${fontSize}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const px = (st.x / 100) * targetW;
+            const py = (st.y / 100) * targetH;
+
+            if (selectedStickerId === st.id) {
+              ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+              ctx.lineWidth = 2;
+              ctx.setLineDash([5, 5]);
+              ctx.strokeRect(
+                px - fontSize / 1.5,
+                py - fontSize / 1.5,
+                fontSize * 1.3,
+                fontSize * 1.3
+              );
+              ctx.setLineDash([]);
+            }
+
+            ctx.fillText(st.emoji, px, py);
+          });
+          ctx.restore();
+        }
+      }
+      animFrameRef.current = requestAnimationFrame(renderLoop);
+    };
+    animFrameRef.current = requestAnimationFrame(renderLoop);
+    return () => {
+      isMounted = false;
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [
+    aspectRatio,
+    isMirrored,
+    isComparing,
+    skinSmooth,
+    skinWhiten,
+    rosyCheeks,
+    lipTint,
+    vignetteVal,
+    selectedFilter,
+    selectedFrame,
+    frameCaption,
+    showDateStamp,
+    stickers,
+    selectedStickerId,
+  ]);
+
+  const handleCanvasPointerDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = renderCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = ((e.clientX - rect.left) / rect.width) * 100;
+    const clickY = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const hit = [...stickers]
+      .reverse()
+      .find((st) => Math.abs(st.x - clickX) < 10 && Math.abs(st.y - clickY) < 10);
+
+    if (hit) {
+      setSelectedStickerId(hit.id);
+      setDraggingId(hit.id);
+    } else {
+      setSelectedStickerId(null);
+    }
+  };
+
+  const handleCanvasPointerMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!draggingId || !renderCanvasRef.current) return;
+    const rect = renderCanvasRef.current.getBoundingClientRect();
+    const moveX = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+    const moveY = Math.max(8, Math.min(92, ((e.clientY - rect.top) / rect.height) * 100));
+
+    setStickers((prev) =>
+      prev.map((st) => (st.id === draggingId ? { ...st, x: moveX, y: moveY } : st))
+    );
+  };
+
+  const handleCanvasPointerUp = () => setDraggingId(null);
+
+  const addSticker = (emoji: string) => {
+    const newId = Date.now().toString();
+    setStickers((prev) => [...prev, { id: newId, emoji, x: 50, y: 50, scale: 1.5 }]);
+    setSelectedStickerId(newId);
+  };
+
+  const removeSelectedSticker = () => {
+    if (!selectedStickerId) return;
+    setStickers((prev) => prev.filter((st) => st.id !== selectedStickerId));
+    setSelectedStickerId(null);
+  };
+
+  const executeCapturePhoto = useCallback(() => {
+    const canvas = renderCanvasRef.current;
+    if (!canvas) return;
+    setFlashEffect(true);
+    setTimeout(() => setFlashEffect(false), 180);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    const filterPreset = selectedFilter || DEFAULT_FILTER;
+
+    setMediaList((prev) => [
+      {
+        id: Date.now().toString(),
+        type: "photo",
+        url: dataUrl,
+        timestamp: new Date().toLocaleTimeString("vi-VN"),
+        filterName: filterPreset.name,
+      },
+      ...prev,
+    ]);
+  }, [selectedFilter]);
+
+  const handleToggleRecord = () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    const canvas = renderCanvasRef.current;
+    if (!canvas) return;
+
+    const canvasStream = (canvas as unknown as { captureStream: (fps: number) => MediaStream }).captureStream(30);
+    if (streamRef.current) {
+      const audioTrack = streamRef.current.getAudioTracks()[0];
+      if (audioTrack) canvasStream.addTrack(audioTrack);
+    }
+
+    const recorder = new MediaRecorder(canvasStream);
+    recordedChunksRef.current = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+      const videoUrl = URL.createObjectURL(blob);
+      const filterPreset = selectedFilter || DEFAULT_FILTER;
+      setMediaList((prev) => [
+        {
+          id: Date.now().toString(),
+          type: "video",
+          url: videoUrl,
+          timestamp: new Date().toLocaleTimeString("vi-VN"),
+          filterName: filterPreset.name,
+        },
+        ...prev,
+      ]);
+    };
+
+    recorder.start();
+    mediaRecorderRef.current = recorder;
+    setIsRecording(true);
+  };
+
+  const formatTime = (sec: number) => {
+    const m = Math.floor(sec / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  return (
     <div className="min-h-screen bg-slate-950 text-white py-6 px-4 md:px-8 select-none">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         {/* Thanh điều hướng quay về Kho Ứng Dụng */}
@@ -982,7 +978,7 @@ export default function CameraStudioPage() {
                   activeTab === "gallery" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
                 }`}
               >
-                Kho ({mediaList.length})
+                Tải xuống ({mediaList.length})
               </button>
             </div>
 
@@ -1231,60 +1227,62 @@ export default function CameraStudioPage() {
 
               {/* TAB GALLERY */}
               {activeTab === "gallery" && (
-                <div className="flex flex-col gap-3">
-                  {mediaList.length === 0 ? (
-                    <div className="text-center py-12 flex flex-col items-center gap-3">
-                      <Camera className="w-10 h-10 text-slate-700" />
-                      <span className="text-slate-500 text-xs font-bold">
-                        Chưa có ảnh/video nào được chụp.
-                      </span>
-                    </div>
-                  ) : (
-                    mediaList.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between bg-slate-800 p-3 rounded-2xl border border-slate-700"
-                      >
-                        <div className="flex items-center gap-3">
-                          {item.type === "photo" ? (
-                            <img
-                              src={item.url}
-                              alt="Shot"
-                              className="w-14 h-10 object-cover rounded-xl"
-                            />
-                          ) : (
-                            <video
-                              src={item.url}
-                              className="w-14 h-10 object-cover rounded-xl"
-                            />
-                          )}
-                          <div>
-                            <span className="text-[10px] font-black text-pink-400 uppercase bg-pink-500/10 px-2 py-0.5 rounded">
-                              {item.filterName}
-                            </span>
-                            <p className="text-xs text-slate-300 mt-1 font-semibold">
-                              {item.timestamp}
-                            </p>
-                          </div>
-                        </div>
-                        <a
-                          href={item.url}
-                          download={`diem10-${item.id}.${item.type === "photo" ? "jpg" : "webm"}`}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1 transition-colors"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>Tải</span>
-                        </a>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+  <div className="flex flex-col gap-3">
+    {mediaList.length === 0 ? (
+      <div className="text-center py-12 flex flex-col items-center gap-3">
+        <Download className="w-10 h-10 text-slate-700 animate-bounce" />
+        <span className="text-slate-400 text-xs font-bold">
+          Chưa có ảnh hoặc video nào được chụp/quay.
+        </span>
+        <span className="text-slate-500 text-[11px]">
+          Hãy bấm nút chụp hoặc quay ở màn hình bên trái để lưu lại tác phẩm!
+        </span>
+      </div>
+    ) : (
+      mediaList.map((item) => (
+        <div
+          key={item.id}
+          className="flex items-center justify-between bg-slate-800 p-3 rounded-2xl border border-slate-700"
+        >
+          <div className="flex items-center gap-3">
+            {item.type === "photo" ? (
+              <img
+                src={item.url}
+                alt="Shot"
+                className="w-14 h-10 object-cover rounded-xl border border-slate-600"
+              />
+            ) : (
+              <video
+                src={item.url}
+                className="w-14 h-10 object-cover rounded-xl border border-slate-600"
+              />
+            )}
+            <div>
+              <span className="text-[10px] font-black text-pink-400 uppercase bg-pink-500/10 px-2 py-0.5 rounded">
+                {item.filterName}
+              </span>
+              <p className="text-xs text-slate-300 mt-1 font-semibold">
+                {item.timestamp}
+              </p>
+            </div>
+          </div>
+          <a
+            href={item.url}
+            download={`diem10-studio-${item.id}.${item.type === "photo" ? "jpg" : "webm"}`}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span>Tải về máy</span>
+          </a>
+        </div>
+      ))
+    )}
+  </div>
+)}
             </div>
           </div>
         </div>
       </div>
     </div>
-  ;
+  );
 }
-// Không còn xuất CameraView trùng tên ở đây nữa
