@@ -1086,6 +1086,27 @@ export default function CameraStudioPage() {
                     />
                   </div>
 
+                  {/* CỤM NÚT ZOOM CAMERA */}
+<div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/20">
+  <button
+    onClick={() => setZoom((prev) => Math.max(1, prev - 0.2))}
+    className="w-7 h-7 flex items-center justify-center text-white font-bold hover:bg-white/20 rounded-full transition"
+    title="Thu nhỏ"
+  >
+    -
+  </button>
+  <span className="text-[11px] font-bold text-pink-400 px-1 min-w-[35px] text-center">
+    {zoom.toFixed(1)}x
+  </span>
+  <button
+    onClick={() => setZoom((prev) => Math.min(3, prev + 0.2))}
+    className="w-7 h-7 flex items-center justify-center text-white font-bold hover:bg-white/20 rounded-full transition"
+    title="Phóng to"
+  >
+    +
+  </button>
+</div>
+
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between text-xs font-bold text-slate-200">
                       <span className="flex items-center gap-2">
@@ -1267,10 +1288,13 @@ export default function CameraStudioPage() {
               </p>
             </div>
           </div>
-          <button
+        <button
   onClick={async () => {
-    try {
-      if (navigator.share && item.type === "photo") {
+    // Kiểm tra nếu là thiết bị di động (iPhone/Android) thì dùng bảng chia sẻ
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile && navigator.share && item.type === "photo") {
+      try {
         const response = await fetch(item.url);
         const blob = await response.blob();
         const file = new File([blob], `diem10-studio-${item.id}.jpg`, { type: "image/jpeg" });
@@ -1279,10 +1303,12 @@ export default function CameraStudioPage() {
           title: "Ảnh chụp từ Điểm 10+",
         });
         return;
+      } catch (err) {
+        console.log("Share cancelled", err);
       }
-    } catch (err) {
-      console.log("Share cancelled", err);
     }
+
+    // Trên Laptop: Tải thẳng về máy lập tức không qua bảng trung gian
     const a = document.createElement("a");
     a.href = item.url;
     a.download = `diem10-studio-${item.id}.${item.type === "photo" ? "jpg" : "webm"}`;
