@@ -93,7 +93,7 @@ export default function Footer() {
                   href="mailto: tvkh.diem10cong@gmail.com"
                   className="hover:text-amber-300 transition-colors"
                 >
-                  schooli@gmail.com
+                  totoan.diem10cong@gmail.com
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
@@ -193,7 +193,7 @@ export default function Footer() {
             <div className="bg-white rounded-sm p-3 text-slate-800 shadow-md max-w-[260px]">
               <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200">
                 <div className="w-12 h-12 rounded border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 font-black text-[#004d95] text-lg">
-                  A
+                  S
                 </div>
                 <div className="overflow-hidden">
                   <a
