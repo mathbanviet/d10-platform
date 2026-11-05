@@ -70,7 +70,7 @@ export default function Footer() {
             </Link>
 
             <h3 className="text-[15px] font-bold uppercase tracking-wide text-white pt-2 leading-snug">
-              CÔNG TY TNHH TRƯỜNG HỌC TRỰC TUYẾN SCHOOLI
+              TRƯỜNG HỌC TRỰC TUYẾN ĐIỂM 10⁺ ONLINE
             </h3>
 
             <p className="text-sm text-blue-100 leading-relaxed">
