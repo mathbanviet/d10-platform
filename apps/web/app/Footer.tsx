@@ -107,7 +107,7 @@ export default function Footer() {
             {/* Các nút mạng xã hội */}
             <div className="flex items-center gap-3 pt-2">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/schooli.edu.vn"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
@@ -197,7 +197,7 @@ export default function Footer() {
                 </div>
                 <div className="overflow-hidden">
                   <a
-                    href="https://facebook.com"
+                    href="https://www.facebook.com/schooli.edu.vn"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-bold text-[#1877f2] hover:underline text-sm block truncate"
